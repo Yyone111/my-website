@@ -1,75 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-const TAGS = ["前端", "全栈", "Vue", "Node", "CS2", "生活记录"];
+const TAGS = ["Elden Ring", "Varolant", "CS2", "Life","Travle"];
 
-const SKILLS = [
-  { name: "HTML/CSS", percent: "90%" },
-  { name: "JavaScript", percent: "85%" },
-  { name: "Java", percent: "80%" },
-  { name: "Redis", percent: "76%" },
-  { name: "Nginx", percent: "78%" },
-  { name: "SpringBoot", percent: "82%" },
-];
 
-const PROJECTS = [
-  {
-    title: "个人博客系统",
-    description:
-      "使用Vue.js和Node.js构建的全栈博客系统，支持文章发布、评论互动和后台管理。",
-    tags: ["Vue.js", "Node.js", "MongoDB"],
-    action: "查看详情",
-    imageAlt: "个人博客系统",
-  },
-  {
-    title: "校园生活助手",
-    description: "课表、待办、签到、共享文件，一站式学生效率工具。",
-    tags: ["React", "TypeScript", "SQLite"],
-    action: "即将上线",
-    imageAlt: "校园生活助手",
-  },
-  {
-    title: "动效组件库",
-    description: "为个人站点定制的轻量级 UI + 动效组件集合。",
-    tags: ["GSAP", "CSS", "UI/UX"],
-    action: "预览 Demo",
-    imageAlt: "动效组件库",
-  },
-];
 
-const FEATURE_CARDS = [
-  {
-    icon: "note",
-    title: "博客",
-    content: "记录我的技术学习、生活感悟和日常思考。分享前端开发、Java使用。",
-  },
-  {
-    icon: "cloud",
-    title: "云盘",
-    content: "个人文件存储与分享空间。收集整理的技术文档、工具软件、电子书等资源。",
-  },
-  {
-    icon: "lab",
-    title: "实验室",
-    content: "我的创意实验场，展示各种有趣的HTML/CSS/JS作品和技术demo。",
-  },
-  {
-    icon: "idea",
-    title: "开源",
-    content: "正在整理的脚手架与小工具，欢迎 Star / Issue / PR。",
-  },
-];
-
-const QUICK_STATS = [
-  { label: "项目沉淀", value: "12+" },
-  { label: "技术文章", value: "36" },
-  { label: "活跃年限", value: "4Y" },
-];
-
-const TIMELINE_ITEMS = [
-  { period: "近期目标", text: "完善个人博客与项目展示，持续输出高质量内容。" },
-  { period: "正在学习", text: "TypeScript 工程化、性能优化和全栈架构设计。" },
-  { period: "合作方向", text: "前端开发、网站重构、效率工具与创意交互页面。" },
-];
 
 const PROFILE_HIGHLIGHTS = [
   "可承接网站重构与性能优化",
@@ -88,11 +22,9 @@ const CONTACT_ITEMS = [
 ];
 
 const STACK_FOCUS = ["React", "Vue", "TypeScript", "Node.js", "MongoDB", "Vite"];
-const CONTENT_TABS = [
-  { id: "work", label: "Work" },
-  { id: "now", label: "Now" },
-  { id: "about", label: "About" },
-];
+
+const ICOMAT_NAV_ITEMS = ["WORK", "TECH", "INDUSTRIES"];
+const BRAND_TEXT = "YANG YAO";
 
 function UiIcon({ name, className = "ui-icon" }) {
   const icons = {
@@ -122,18 +54,7 @@ function UiIcon({ name, className = "ui-icon" }) {
 function App() {
   const rootRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("work");
-  const formatBeijingTime = () =>
-    new Intl.DateTimeFormat("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-      timeZone: "Asia/Shanghai",
-    }).format(new Date());
-  const [currentTime, setCurrentTime] = useState(() =>
-    formatBeijingTime()
-  );
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = isModalOpen ? "hidden" : "auto";
@@ -148,14 +69,6 @@ function App() {
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setCurrentTime(formatBeijingTime());
-    }, 1000);
-
-    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -181,12 +94,57 @@ function App() {
     <>
       <div className="site-top-line">
         <div className="site-top-left">
-          <span className="site-top-name">YANG YAO</span>
+          <span className="site-top-name" aria-label={BRAND_TEXT}>
+            {BRAND_TEXT.split("").map((char, index) => (
+              <span
+                key={`${char}-${index}`}
+                className="site-top-name-char"
+                style={{ "--char-delay": `${index * 0.08}s` }}
+              >
+                {char === " " ? "\u00A0" : char}
+              </span>
+            ))}
+          </span>
         </div>
-        <div className="site-top-right">
-          <span className="site-top-time">{currentTime} 北京时间</span>
-          <span className="site-top-work">Open for work</span>
-        </div>
+        <nav
+          className={`icomat-nav icomat-nav-inline ${isNavOpen ? "is-open" : ""}`}
+          aria-label="主导航"
+        >
+          <button
+            type="button"
+            className={`icomat-nav-toggle ${isNavOpen ? "is-open" : ""}`}
+            aria-label={isNavOpen ? "收起导航" : "展开导航"}
+            onClick={() => setIsNavOpen((prev) => !prev)}
+          >
+            <span className="icomat-nav-toggle-bar" />
+            <span className="icomat-nav-toggle-bar" />
+            <span className="icomat-nav-toggle-bar" />
+          </button>
+
+          <div className="icomat-nav-links">
+            {ICOMAT_NAV_ITEMS.map((item) => (
+              <a key={item} href="#" className="icomat-nav-item">
+                <span className="icomat-nav-text" aria-hidden="true">
+                  <span>{item}</span>
+                  <span>{item}</span>
+                </span>
+              </a>
+            ))}
+            <a href="#" className="icomat-nav-item icomat-nav-item-company">
+              <span className="icomat-nav-text" aria-hidden="true">
+                <span>THE COMPANY</span>
+                <span>THE COMPANY</span>
+              </span>
+              <span className="icomat-nav-caret" aria-hidden="true">▼</span>
+            </a>
+            <a href="#" className="icomat-nav-item icomat-nav-item-cta">
+              <span className="icomat-nav-text" aria-hidden="true">
+                <span>BUILD W/ ICOMAT</span>
+                <span>BUILD W/ ICOMAT</span>
+              </span>
+            </a>
+          </div>
+        </nav>
       </div>
 
       <div
@@ -205,7 +163,7 @@ function App() {
         <aside className="yy-left">
           <div className="profile-card">
             <div className="avatar-container">
-              <img src="/static/img/head.jpg" alt="Yycjy" className="avatar" />
+              <img src="/static/img/head.jpg" alt="Yy" className="avatar" />
               <div className="emoji-badge emoji-1">
                 <UiIcon name="spark" className="badge-icon" />
               </div>
@@ -250,30 +208,6 @@ function App() {
                 />
               </button>
             </div>
-
-            <h3 className="title">个人标签</h3>
-            <div className="tags">
-              {TAGS.map((tag) => (
-                <span className="tag" key={tag}>
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            <div className="left-panel-block">
-              <h3 className="title">个人简介</h3>
-              <div className="left-highlight-list">
-                {PROFILE_HIGHLIGHTS.map((item) => (
-                  <p key={item} className="left-highlight-item">
-                    <span className="left-highlight-icon">
-                      <UiIcon name="check" />
-                    </span>
-                    {item}
-                  </p>
-                ))}
-              </div>
-            </div>
-
             <div className="left-panel-block">
               <h3 className="title">快速联系</h3>
               <div className="left-contact-list">
@@ -305,6 +239,31 @@ function App() {
               </div>
             </div>
 
+            <h3 className="title">个人标签</h3>
+            <div className="tags">
+              {TAGS.map((tag) => (
+                <span className="tag" key={tag}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <div className="left-panel-block">
+              <h3 className="title">个人简介</h3>
+              <div className="left-highlight-list">
+                {PROFILE_HIGHLIGHTS.map((item) => (
+                  <p key={item} className="left-highlight-item">
+                    <span className="left-highlight-icon">
+                      <UiIcon name="check" />
+                    </span>
+                    {item}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+           
+
             <div className="left-panel-block">
               <h3 className="title">技术栈方向</h3>
               <div className="stack-focus-list">
@@ -316,20 +275,11 @@ function App() {
               </div>
             </div>
 
-            <div className="left-panel-block skills-section">
-              <h3 className="title">技术技能</h3>
-              {SKILLS.map((skill) => (
-                <div className="skill-item" key={skill.name}>
-                  <div className="skill-info">
-                    <span>{skill.name}</span>
-                    <span>{skill.percent}</span>
-                  </div>
-                  <div className="skill-bar">
-                    <div className="skill-progress" style={{ width: skill.percent }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            
+
+            
+
+           
           </div>
         </aside>
 
@@ -340,9 +290,9 @@ function App() {
                 Hello, I'm <span className="gradientText">Yy</span>
               </h1>
               <p className="hero-landing-subtitle">
-                <span className="purpleText">Full Stack</span> Developer · 记录热爱
+                <span className="purpleText">Fall In Life</span> · Love
               </p>
-              <p className="hero-landing-subtitle">永远在路上 · 保持输出与探索</p>
+              <p className="hero-landing-subtitle"><span className="gradientText">永远在路上</span> · 保持输出与探索</p>
             </section>
 
           </header>
@@ -351,21 +301,6 @@ function App() {
         </section>
       </div>
 
-      <nav className="top-tab-nav" aria-label="内容切换导航">
-        <a className="top-tab-brand" href="/" aria-label="网站首页">
-          <img src="/static/img/me.ico" alt="Yy 图标" className="top-tab-brand-icon" />
-        </a>
-        {CONTENT_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={tab.id === activeTab ? "active" : ""}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
     </>
   );
 }
