@@ -86,7 +86,10 @@ function App() {
     },
   ]);
 
-  const CHAT_API_ENDPOINT = `${import.meta.env.VITE_API_URL}/ai/chat`;
+  const CHAT_API_ENDPOINT =
+  window.location.hostname === "localhost"
+    ? "http://localhost:10000/ai/chat"
+    : "https://ownwebbackend.onrender.com/ai/chat";
 
   const clampWidgetPosition = (x, y) => {
     const maxX = Math.max(FLOAT_EDGE_GAP, window.innerWidth - FLOAT_BTN_SIZE - FLOAT_EDGE_GAP);
