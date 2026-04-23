@@ -52,9 +52,57 @@ function UiIcon({ name, className = "ui-icon" }) {
 }
 
 function App() {
+  const FLOAT_BTN_SIZE = 56;
+  const FLOAT_EDGE_GAP = 12;
+  const CHAT_PANEL_GAP = 12;
   const rootRef = useRef(null);
+  const chatBodyRef = useRef(null);
+  const dragStateRef = useRef({
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
+    moved: false,
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isDraggingFloatBtn, setIsDraggingFloatBtn] = useState(false);
+  const [chatWidgetPos, setChatWidgetPos] = useState(() => {
+    const margin = 24;
+    if (typeof window === "undefined") return { x: 0, y: 0 };
+    return {
+      x: window.innerWidth - FLOAT_BTN_SIZE - margin,
+      y: window.innerHeight - FLOAT_BTN_SIZE - margin,
+    };
+  });
+  const [chatInput, setChatInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: "assistant",
+      text: "你好，我是站点 AI 助手。你可以先告诉我你想了解的内容。",
+    },
+  ]);
+
+  const CHAT_API_ENDPOINT = import.meta.env.VITE_API_URL + "/ai/chat";
+
+  const clampWidgetPosition = (x, y) => {
+    const maxX = Math.max(FLOAT_EDGE_GAP, window.innerWidth - FLOAT_BTN_SIZE - FLOAT_EDGE_GAP);
+    const maxY = Math.max(FLOAT_EDGE_GAP, window.innerHeight - FLOAT_BTN_SIZE - FLOAT_EDGE_GAP);
+
+    return {
+      x: Math.min(Math.max(x, FLOAT_EDGE_GAP), maxX),
+      y: Math.min(Math.max(y, FLOAT_EDGE_GAP), maxY),
+    };
+  };
+
+  const getChatPanelMetrics = () => {
+    const width = Math.min(380, window.innerWidth - 24);
+    const height = Math.min(560, window.innerHeight - 110);
+    return { width, height };
+  };
 
   useEffect(() => {
     document.body.style.overflow = isModalOpen ? "hidden" : "auto";
@@ -65,7 +113,10 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") setIsModalOpen(false);
+      if (event.key === "Escape") {
+        setIsModalOpen(false);
+        setIsChatOpen(false);
+      }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
@@ -89,6 +140,176 @@ function App() {
     cards.forEach((card) => observer.observe(card));
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!chatBodyRef.current) return;
+    chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+  }, [chatMessages, isSending, isChatOpen]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setChatWidgetPos((prev) => clampWidgetPosition(prev.x, prev.y));
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleFloatButtonPointerDown = (event) => {
+    const startPos = { x: event.clientX, y: event.clientY };
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: startPos.x,
+      startY: startPos.y,
+      originX: chatWidgetPos.x,
+      originY: chatWidgetPos.y,
+      moved: false,
+    };
+    setIsDraggingFloatBtn(true);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const handleFloatButtonPointerMove = (event) => {
+    const drag = dragStateRef.current;
+    if (!isDraggingFloatBtn || drag.pointerId !== event.pointerId) return;
+
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      drag.moved = true;
+    }
+
+    setChatWidgetPos(clampWidgetPosition(drag.originX + dx, drag.originY + dy));
+  };
+
+  const handleFloatButtonPointerEnd = (event) => {
+    const drag = dragStateRef.current;
+    if (drag.pointerId !== event.pointerId) return;
+
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    const shouldToggleChat = !drag.moved;
+    dragStateRef.current.pointerId = null;
+    setIsDraggingFloatBtn(false);
+
+    if (shouldToggleChat) {
+      setIsChatOpen((prev) => !prev);
+    }
+  };
+
+  const chatWidgetStyle = {
+    left: `${chatWidgetPos.x}px`,
+    top: `${chatWidgetPos.y}px`,
+    right: "auto",
+    bottom: "auto",
+  };
+
+  const chatPanelStyle = (() => {
+    if (typeof window === "undefined") return {};
+    const { width, height } = getChatPanelMetrics();
+    const maxLeft = Math.max(FLOAT_EDGE_GAP, window.innerWidth - width - FLOAT_EDGE_GAP);
+    const left = Math.min(
+      Math.max(chatWidgetPos.x + FLOAT_BTN_SIZE - width, FLOAT_EDGE_GAP),
+      maxLeft
+    );
+
+    const preferTop = chatWidgetPos.y - height - CHAT_PANEL_GAP;
+    const canPlaceAbove = preferTop >= FLOAT_EDGE_GAP;
+    const fallbackTop = chatWidgetPos.y + FLOAT_BTN_SIZE + CHAT_PANEL_GAP;
+    const maxTop = Math.max(FLOAT_EDGE_GAP, window.innerHeight - height - FLOAT_EDGE_GAP);
+    const top = canPlaceAbove
+      ? preferTop
+      : Math.min(Math.max(fallbackTop, FLOAT_EDGE_GAP), maxTop);
+
+    return {
+      left: `${left}px`,
+      top: `${top}px`,
+    };
+  })();
+
+  const handleSendMessage = async () => {
+    const content = chatInput.trim();
+    if (!content || isSending) return;
+
+    const historyForRequest = [...chatMessages, { role: "user", text: content }];
+    setChatMessages(historyForRequest);
+    setChatInput("");
+    setIsSending(true);
+
+    try {
+      const url = `${CHAT_API_ENDPOINT}?prompt=${encodeURIComponent(content)}`;
+      const response = await fetch(url, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error(`request failed: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        const reply =
+          data?.data?.reply ||
+          data?.reply ||
+          data?.message ||
+          "收到消息了，但后端暂未返回有效回复。";
+        setChatMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+      } else if (response.body) {
+        // For Flux text streams, read and render chunks progressively.
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let reply = "";
+
+        setChatMessages((prev) => [...prev, { role: "assistant", text: "" }]);
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          reply += decoder.decode(value, { stream: true });
+
+          setChatMessages((prev) => {
+            const next = [...prev];
+            const lastIndex = next.length - 1;
+            if (lastIndex >= 0 && next[lastIndex].role === "assistant") {
+              next[lastIndex] = { ...next[lastIndex], text: reply };
+            }
+            return next;
+          });
+        }
+
+        reply += decoder.decode();
+        reply = reply.trim();
+        if (!reply) {
+          setChatMessages((prev) => {
+            const next = [...prev];
+            const lastIndex = next.length - 1;
+            if (lastIndex >= 0 && next[lastIndex].role === "assistant") {
+              next[lastIndex] = {
+                ...next[lastIndex],
+                text: "收到消息了，但后端暂未返回有效回复。",
+              };
+            }
+            return next;
+          });
+        }
+      } else {
+        const reply = (await response.text()).trim() || "收到消息了，但后端暂未返回有效回复。";
+        setChatMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+      }
+    } catch (error) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: "聊天服务暂时不可用，请稍后再试。",
+        },
+      ]);
+      console.error("chat request error:", error);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <>
@@ -301,6 +522,70 @@ function App() {
         </section>
       </div>
 
+      <div className={`chat-widget ${isDraggingFloatBtn ? "is-dragging" : ""}`} style={chatWidgetStyle}>
+        {isChatOpen && (
+          <section className="chat-panel" style={chatPanelStyle} aria-label="AI 聊天窗口">
+            <header className="chat-panel-header">
+              <div>
+                <strong>小Yang助手</strong>
+                <p>在线</p>
+              </div>
+              <button
+                type="button"
+                className="chat-panel-close"
+                onClick={() => setIsChatOpen(false)}
+                aria-label="关闭聊天窗口"
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="chat-panel-body" ref={chatBodyRef}>
+              {chatMessages.map((item, index) => (
+                <div
+                  key={`${item.role}-${index}`}
+                  className={`chat-message ${item.role === "user" ? "is-user" : "is-assistant"}`}
+                >
+                  {item.text}
+                </div>
+              ))}
+              {isSending && <div className="chat-message is-assistant">AI 正在输入...</div>}
+            </div>
+
+            <footer className="chat-panel-footer">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+                onKeyDown={(event) => event.key === "Enter" && handleSendMessage()}
+                placeholder="输入消息..."
+                aria-label="输入消息"
+              />
+              <button type="button" onClick={handleSendMessage} disabled={isSending}>
+                发送
+              </button>
+            </footer>
+          </section>
+        )}
+
+        <button
+          type="button"
+          className={`chat-float-btn ${isDraggingFloatBtn ? "is-dragging" : ""}`}
+          onPointerDown={handleFloatButtonPointerDown}
+          onPointerMove={handleFloatButtonPointerMove}
+          onPointerUp={handleFloatButtonPointerEnd}
+          onPointerCancel={handleFloatButtonPointerEnd}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setIsChatOpen((prev) => !prev);
+            }
+          }}
+          aria-label={isChatOpen ? "关闭 AI 聊天" : "打开 AI 聊天"}
+        >
+          小Y
+        </button>
+      </div>
     </>
   );
 }
