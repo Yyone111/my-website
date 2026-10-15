@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const TAGS = ["Elden Ring", "Varolant", "CS2", "Life","Travle"];
-
-
-
+const TAGS = ["Elden Ring", "Varolant", "CS2", "Life", "Travle"];
 
 const PROFILE_HIGHLIGHTS = [
   "可承接网站重构与性能优化",
@@ -21,7 +18,82 @@ const CONTACT_ITEMS = [
   { label: "在线状态", value: "工作日 10:00 - 22:00", type: "clock" },
 ];
 
-const STACK_FOCUS = ["React", "Vue", "TypeScript", "Node.js", "MongoDB", "Vite"];
+const STACK_FOCUS = [
+  "React",
+  "Vue",
+  "TypeScript",
+  "Node.js",
+  "MongoDB",
+  "Vite",
+];
+
+/* ===== 右侧内容区数据（方案 A：Hero → 内容瀑布）===== */
+
+// 统计徽标区
+const STATS = [
+  { value: "6+", label: "技术栈深耕" },
+  { value: "∞", label: "探索在路上" },
+  { value: "24/7", label: "在线模式" },
+];
+
+// 精选作品（封面用 CSS 渐变占位，可替换为真实图片）
+const PROJECTS = [
+  {
+    title: "HomePage 个人主页",
+    desc: "React + Vite 单页站点，玻璃拟态设计，集成 AI 聊天助手与可拖拽浮窗。",
+    tags: ["React", "Vite", "AI"],
+    cover: "linear-gradient(130deg, #3f83f8 0%, #6d5dfc 55%, #a855f7 100%)",
+    icon: "rocket",
+    href: "#projects",
+  },
+  {
+    title: "AI 站点助手",
+    desc: "对话式 AI 助手，支持流式渲染、历史上下文与本地/线上双端切换。",
+    tags: ["Stream", "API", "UX"],
+    cover: "linear-gradient(130deg, #34d399 0%, #3b82f6 55%, #2e9be9 100%)",
+    icon: "spark",
+    href: "#",
+  },
+  {
+    title: "开源小工具集",
+    desc: "长期更新的效率工具与踩坑笔记，帮助后来者少走弯路。",
+    tags: ["Tools", "Blog", "OSS"],
+    cover: "linear-gradient(130deg, #fbbf24 0%, #f97316 55%, #ef4444 100%)",
+    icon: "lab",
+    href: "#",
+  },
+];
+
+// 技能明细（level 为自评百分比，可按实际调整）
+const SKILLS = [
+  { name: "React", level: 88, note: "组件化 / Hooks / 状态管理" },
+  { name: "Vue", level: 80, note: "Composition API / 生态工程" },
+  { name: "TypeScript", level: 82, note: "类型系统 / 工程化实践" },
+  { name: "Node.js", level: 78, note: "接口服务 / 流式响应" },
+  { name: "MongoDB", level: 74, note: "数据建模 / 聚合查询" },
+  { name: "Vite", level: 90, note: "构建工具 / 开发体验" },
+];
+
+// 成长时间线（示例占位，可替换为真实经历）
+const TIMELINE = [
+  {
+    period: "2026",
+    text: "持续打磨个人站点：AI 助手接入、流式聊天可视化、动效体系化。",
+  },
+  {
+    period: "2025",
+    text: "搭建 HomePage 全栈架构：React 前端 + Node 后端 + Render 部署。",
+  },
+  { period: "2024", text: "系统输出博客与技术笔记，沉淀前端工程化实践。" },
+  { period: "2023", text: "踏足全栈开发，从 Vue 走向 React 与 Node.js。" },
+];
+
+// Hero 打字机轮换语录
+const HERO_SLOGANS = [
+  { text: "永远在路上 · 保持输出与探索", accent: "gradientText" },
+  { text: "Fall In Life · Love", accent: "purpleText" },
+  { text: "全栈开发 · 热爱设计与交互", accent: "gradientText" },
+];
 
 const ICOMAT_NAV_ITEMS = ["WORK", "TECH", "INDUSTRIES"];
 const BRAND_TEXT = "YANG YAO";
@@ -32,11 +104,15 @@ function UiIcon({ name, className = "ui-icon" }) {
       <path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z" />
     ),
     code: <path d="M9 8L5 12l4 4M15 8l4 4-4 4M13 6l-2 12" />,
-    pin: <path d="M12 21s6-5.1 6-10a6 6 0 10-12 0c0 4.9 6 10 6 10zM12 13a2 2 0 100-4 2 2 0 000 4z" />,
+    pin: (
+      <path d="M12 21s6-5.1 6-10a6 6 0 10-12 0c0 4.9 6 10 6 10zM12 13a2 2 0 100-4 2 2 0 000 4z" />
+    ),
     note: <path d="M7 4h10a2 2 0 012 2v12l-4-2-4 2-4-2-4 2V6a2 2 0 012-2h2" />,
     cloud: <path d="M8 18h9a4 4 0 10-.7-7.9A5 5 0 007 11a3 3 0 001 7z" />,
     lab: <path d="M10 3h4M10 3v4l-4 8a3 3 0 003 4h6a3 3 0 003-4l-4-8V3" />,
-    idea: <path d="M9 18h6M10 21h4M12 3a6 6 0 00-3 11c.7.5 1.2 1.3 1.2 2.2h3.6c0-.9.5-1.7 1.2-2.2A6 6 0 0012 3z" />,
+    idea: (
+      <path d="M9 18h6M10 21h4M12 3a6 6 0 00-3 11c.7.5 1.2 1.3 1.2 2.2h3.6c0-.9.5-1.7 1.2-2.2A6 6 0 0012 3z" />
+    ),
     chart: <path d="M5 19h14M8 16V9M12 16V5M16 16v-7" />,
     rocket: <path d="M5 19l4-1 9-9a4 4 0 00-5-5l-9 9-1 4 2 2zM12 7l5 5" />,
     email: <path d="M4 7h16v10H4zM4 8l8 6 8-6" />,
@@ -45,7 +121,13 @@ function UiIcon({ name, className = "ui-icon" }) {
   };
 
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
       {icons[name] || icons.spark}
     </svg>
   );
@@ -79,6 +161,8 @@ function App() {
   });
   const [chatInput, setChatInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [typedText, setTypedText] = useState("");
+  const [sloganIndex, setSloganIndex] = useState(0);
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -87,13 +171,19 @@ function App() {
   ]);
 
   const CHAT_API_ENDPOINT =
-  window.location.hostname === "localhost"
-    ? "http://localhost:10000/ai/chat"
-    : "https://ownwebbackend.onrender.com/ai/chat";
+    window.location.hostname === "localhost"
+      ? "http://localhost:10000/ai/chat"
+      : "https://ownwebbackend.onrender.com/ai/chat";
 
   const clampWidgetPosition = (x, y) => {
-    const maxX = Math.max(FLOAT_EDGE_GAP, window.innerWidth - FLOAT_BTN_SIZE - FLOAT_EDGE_GAP);
-    const maxY = Math.max(FLOAT_EDGE_GAP, window.innerHeight - FLOAT_BTN_SIZE - FLOAT_EDGE_GAP);
+    const maxX = Math.max(
+      FLOAT_EDGE_GAP,
+      window.innerWidth - FLOAT_BTN_SIZE - FLOAT_EDGE_GAP,
+    );
+    const maxY = Math.max(
+      FLOAT_EDGE_GAP,
+      window.innerHeight - FLOAT_BTN_SIZE - FLOAT_EDGE_GAP,
+    );
 
     return {
       x: Math.min(Math.max(x, FLOAT_EDGE_GAP), maxX),
@@ -136,10 +226,12 @@ function App() {
           }
         });
       },
-      { threshold: 0.15, rootMargin: "0px 0px -50px 0px" }
+      { threshold: 0.15, rootMargin: "0px 0px -50px 0px" },
     );
 
-    const cards = rootRef.current.querySelectorAll(".function-card, .project-card");
+    const cards = rootRef.current.querySelectorAll(
+      ".function-card, .project-card",
+    );
     cards.forEach((card) => observer.observe(card));
     return () => observer.disconnect();
   }, []);
@@ -148,6 +240,39 @@ function App() {
     if (!chatBodyRef.current) return;
     chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
   }, [chatMessages, isSending, isChatOpen]);
+
+  // ★ 打字机副标题（动效1：克制轮换，尊重 prefers-reduced-motion）
+  useEffect(() => {
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const current = HERO_SLOGANS[sloganIndex];
+
+    if (prefersReduced) {
+      setTypedText(current.text);
+      const timer = setTimeout(
+        () => setSloganIndex((i) => (i + 1) % HERO_SLOGANS.length),
+        4200,
+      );
+      return () => clearTimeout(timer);
+    }
+
+    setTypedText("");
+    let charIndex = 0;
+    const typeTimer = setInterval(() => {
+      charIndex += 1;
+      setTypedText(current.text.slice(0, charIndex));
+      if (charIndex >= current.text.length) {
+        clearInterval(typeTimer);
+        setTimeout(
+          () => setSloganIndex((i) => (i + 1) % HERO_SLOGANS.length),
+          2600,
+        );
+      }
+    }, 110);
+
+    return () => clearInterval(typeTimer);
+  }, [sloganIndex]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -209,16 +334,22 @@ function App() {
   const chatPanelStyle = (() => {
     if (typeof window === "undefined") return {};
     const { width, height } = getChatPanelMetrics();
-    const maxLeft = Math.max(FLOAT_EDGE_GAP, window.innerWidth - width - FLOAT_EDGE_GAP);
+    const maxLeft = Math.max(
+      FLOAT_EDGE_GAP,
+      window.innerWidth - width - FLOAT_EDGE_GAP,
+    );
     const left = Math.min(
       Math.max(chatWidgetPos.x + FLOAT_BTN_SIZE - width, FLOAT_EDGE_GAP),
-      maxLeft
+      maxLeft,
     );
 
     const preferTop = chatWidgetPos.y - height - CHAT_PANEL_GAP;
     const canPlaceAbove = preferTop >= FLOAT_EDGE_GAP;
     const fallbackTop = chatWidgetPos.y + FLOAT_BTN_SIZE + CHAT_PANEL_GAP;
-    const maxTop = Math.max(FLOAT_EDGE_GAP, window.innerHeight - height - FLOAT_EDGE_GAP);
+    const maxTop = Math.max(
+      FLOAT_EDGE_GAP,
+      window.innerHeight - height - FLOAT_EDGE_GAP,
+    );
     const top = canPlaceAbove
       ? preferTop
       : Math.min(Math.max(fallbackTop, FLOAT_EDGE_GAP), maxTop);
@@ -233,7 +364,10 @@ function App() {
     const content = chatInput.trim();
     if (!content || isSending) return;
 
-    const historyForRequest = [...chatMessages, { role: "user", text: content }];
+    const historyForRequest = [
+      ...chatMessages,
+      { role: "user", text: content },
+    ];
     setChatMessages(historyForRequest);
     setChatInput("");
     setIsSending(true);
@@ -256,7 +390,10 @@ function App() {
           data?.reply ||
           data?.message ||
           "收到消息了，但后端暂未返回有效回复。";
-        setChatMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: reply },
+        ]);
       } else if (response.body) {
         // For Flux text streams, read and render chunks progressively.
         const reader = response.body.getReader();
@@ -297,8 +434,13 @@ function App() {
           });
         }
       } else {
-        const reply = (await response.text()).trim() || "收到消息了，但后端暂未返回有效回复。";
-        setChatMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+        const reply =
+          (await response.text()).trim() ||
+          "收到消息了，但后端暂未返回有效回复。";
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: reply },
+        ]);
       }
     } catch (error) {
       setChatMessages((prev) => [
@@ -359,7 +501,9 @@ function App() {
                 <span>THE COMPANY</span>
                 <span>THE COMPANY</span>
               </span>
-              <span className="icomat-nav-caret" aria-hidden="true">▼</span>
+              <span className="icomat-nav-caret" aria-hidden="true">
+                ▼
+              </span>
             </a>
             <a href="#" className="icomat-nav-item icomat-nav-item-cta">
               <span className="icomat-nav-text" aria-hidden="true">
@@ -375,12 +519,19 @@ function App() {
         id="qqModal"
         className="modal"
         style={{ display: isModalOpen ? "block" : "none" }}
-        onClick={(event) => event.target.id === "qqModal" && setIsModalOpen(false)}
+        onClick={(event) =>
+          event.target.id === "qqModal" && setIsModalOpen(false)
+        }
       >
         <span className="close" onClick={() => setIsModalOpen(false)}>
           &times;
         </span>
-        <img className="modal-content" id="qqImage" src="/static/img/qqnumber.jpg" alt="QQ二维码" />
+        <img
+          className="modal-content"
+          id="qqImage"
+          src="/static/img/qqnumber.jpg"
+          alt="QQ二维码"
+        />
       </div>
 
       <div className="yy-main" ref={rootRef}>
@@ -397,7 +548,11 @@ function App() {
             </div>
 
             <div className="info-item">
-              <a href="https://cn.gullmap.com/is" target="_blank" rel="noreferrer">
+              <a
+                href="https://cn.gullmap.com/is"
+                target="_blank"
+                rel="noreferrer"
+              >
                 <span className="info-icon">
                   <UiIcon name="pin" />
                 </span>
@@ -415,20 +570,33 @@ function App() {
                 <img
                   src="https://www.bilibili.com/favicon.ico"
                   alt="Bilibili"
-                  style={{ width: "30px", height: "30px", verticalAlign: "middle" }}
+                  style={{
+                    width: "30px",
+                    height: "30px",
+                    verticalAlign: "middle",
+                  }}
                 />
               </a>
               <button
                 type="button"
                 className="domain"
                 onClick={() => setIsModalOpen(true)}
-                style={{ background: "transparent", border: "none", padding: "5px" }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  padding: "5px",
+                }}
                 aria-label="打开QQ二维码"
               >
                 <img
                   src="/static/img/qq.ico"
                   alt="QQ"
-                  style={{ width: "30px", height: "30px", verticalAlign: "middle", cursor: "pointer" }}
+                  style={{
+                    width: "30px",
+                    height: "30px",
+                    verticalAlign: "middle",
+                    cursor: "pointer",
+                  }}
                 />
               </button>
             </div>
@@ -448,7 +616,11 @@ function App() {
 
                   if (item.href) {
                     return (
-                      <a key={item.label} className="left-contact-item" href={item.href}>
+                      <a
+                        key={item.label}
+                        className="left-contact-item"
+                        href={item.href}
+                      >
                         {content}
                       </a>
                     );
@@ -486,8 +658,6 @@ function App() {
               </div>
             </div>
 
-           
-
             <div className="left-panel-block">
               <h3 className="title">技术栈方向</h3>
               <div className="stack-focus-list">
@@ -498,12 +668,6 @@ function App() {
                 ))}
               </div>
             </div>
-
-            
-
-            
-
-           
           </div>
         </aside>
 
@@ -513,21 +677,156 @@ function App() {
               <h1 className="hero-landing-title">
                 Hello, I'm <span className="gradientText">Yy</span>
               </h1>
-              <p className="hero-landing-subtitle">
-                <span className="purpleText">Fall In Life</span> · Love
+              {/* ★ 动效1：打字机轮换副标题 */}
+              <p className="hero-landing-subtitle typewriter-line">
+                <span className={HERO_SLOGANS[sloganIndex].accent}>
+                  {typedText}
+                </span>
+                <span className="typewriter-caret" aria-hidden="true" />
               </p>
-              <p className="hero-landing-subtitle"><span className="gradientText">永远在路上</span> · 保持输出与探索</p>
+              <div className="hero-actions">
+                <a className="hero-btn" href="#projects">
+                  <UiIcon name="rocket" className="hero-btn-icon" /> 查看作品
+                </a>
+                <a className="hero-btn hero-btn-secondary" href="#experience">
+                  <UiIcon name="pin" className="hero-btn-icon" /> 我的足迹
+                </a>
+              </div>
+              {/* 统计徽标 */}
+              <div className="stats-grid hero-stats">
+                {STATS.map((stat) => (
+                  <div className="stat-item" key={stat.label}>
+                    <p className="stat-value">{stat.value}</p>
+                    <p className="stat-label">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
             </section>
-
           </header>
 
-          <main />
+          <main className="yy-content">
+            {/* 关于 + 技能 并排（紧凑上半部） */}
+            <section className="content-pair">
+              <section className="function-card about-card" id="about">
+                <header className="card-header">
+                  <span className="card-icon">
+                    <UiIcon name="idea" />
+                  </span>
+                  <h3 className="card-title">关于我</h3>
+                </header>
+                <div className="card-content">
+                  <p className="about-lead">
+                    全能型全栈开发者，专注 React / Vue 前端与 Node.js 后端。
+                  </p>
+                  <div className="about-facts">
+                    <span>
+                      <UiIcon name="pin" /> ALLWORLD · Iceland
+                    </span>
+                    <span>
+                      <UiIcon name="email" /> yangyao596@gmail.com
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              {/* 技能明细：两栏紧凑网格 */}
+              <section className="function-card skills-card" id="skills">
+                <header className="card-header">
+                  <span className="card-icon">
+                    <UiIcon name="code" />
+                  </span>
+                  <h3 className="card-title">技能</h3>
+                </header>
+                <div className="skills-compact">
+                  {SKILLS.map((skill) => (
+                    <div className="skill-chip" key={skill.name}>
+                      <div className="skill-chip-head">
+                        <span className="skill-chip-name">{skill.name}</span>
+                        <span className="skill-chip-level">{skill.level}%</span>
+                      </div>
+                      <div className="skill-bar">
+                        <div
+                          className="skill-progress"
+                          style={{ width: `${skill.level}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </section>
+
+            {/* 精选作品：横向卡片，封面高 100px 更紧凑 */}
+            <section className="function-card projects-section" id="projects">
+              <header className="card-header">
+                <span className="card-icon">
+                  <UiIcon name="chart" />
+                </span>
+                <h3 className="card-title">精选作品</h3>
+              </header>
+              <div className="projects-grid">
+                {PROJECTS.map((project) => (
+                  <a
+                    key={project.title}
+                    className="project-card"
+                    href={project.href}
+                    aria-label={project.title}
+                  >
+                    <div
+                      className="project-image"
+                      role="presentation"
+                      style={{ background: project.cover }}
+                    >
+                      <span className="project-cover-icon">
+                        <UiIcon name={project.icon} />
+                      </span>
+                    </div>
+                    <div className="project-info">
+                      <h4>{project.title}</h4>
+                      <p>{project.desc}</p>
+                      <div className="project-tags">
+                        {project.tags.map((tag) => (
+                          <span key={tag}>{tag}</span>
+                        ))}
+                      </div>
+                      <span className="project-link">了解更多 →</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
+
+            {/* 成长足迹：紧凑两列网格 */}
+            <section className="function-card timeline-card" id="experience">
+              <header className="card-header">
+                <span className="card-icon">
+                  <UiIcon name="idea" />
+                </span>
+                <h3 className="card-title">成长足迹</h3>
+              </header>
+              <div className="timeline-grid">
+                {TIMELINE.map((item) => (
+                  <div className="timeline-row" key={item.period}>
+                    <p className="timeline-period">{item.period}</p>
+                    <p className="timeline-text">{item.text}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </main>
         </section>
       </div>
 
-      <div className={`chat-widget ${isDraggingFloatBtn ? "is-dragging" : ""}`} style={chatWidgetStyle}>
+      <div
+        className={`chat-widget ${isDraggingFloatBtn ? "is-dragging" : ""}`}
+        style={chatWidgetStyle}
+      >
         {isChatOpen && (
-          <section className="chat-panel" style={chatPanelStyle} aria-label="AI 聊天窗口">
+          <section
+            className="chat-panel"
+            style={chatPanelStyle}
+            aria-label="AI 聊天窗口"
+          >
             <header className="chat-panel-header">
               <div>
                 <strong>小Yang助手</strong>
@@ -552,7 +851,9 @@ function App() {
                   {item.text}
                 </div>
               ))}
-              {isSending && <div className="chat-message is-assistant">AI 正在输入...</div>}
+              {isSending && (
+                <div className="chat-message is-assistant">AI 正在输入...</div>
+              )}
             </div>
 
             <footer className="chat-panel-footer">
@@ -560,11 +861,17 @@ function App() {
                 type="text"
                 value={chatInput}
                 onChange={(event) => setChatInput(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && handleSendMessage()}
+                onKeyDown={(event) =>
+                  event.key === "Enter" && handleSendMessage()
+                }
                 placeholder="输入消息..."
                 aria-label="输入消息"
               />
-              <button type="button" onClick={handleSendMessage} disabled={isSending}>
+              <button
+                type="button"
+                onClick={handleSendMessage}
+                disabled={isSending}
+              >
                 发送
               </button>
             </footer>
