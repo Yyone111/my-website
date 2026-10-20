@@ -1148,6 +1148,15 @@ body::before {
     padding: 14px 12px 28px;
   }
 
+  /* 移动端：先展示 Hero 主标题，再展示左侧资料卡 */
+  .yy-right {
+    order: 1;
+  }
+
+  .yy-left {
+    order: 2;
+  }
+
   .yy-left,
   .yy-right {
     width: 100%;
@@ -3727,6 +3736,36 @@ body::after {
   color: var(--premium-accent);
 }
 
+/* 关于卡指标行：消除下半区大片留白 */
+.about-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.about-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f4f8ff;
+  border: 1px solid #e2ecfa;
+}
+
+.about-metric strong {
+  font-size: 18px;
+  line-height: 1.1;
+  color: var(--premium-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.about-metric span {
+  font-size: 11px;
+  color: var(--warm-ink-soft);
+}
+
 /* ---- 技能：两栏紧凑芯片 ---- */
 .skills-card .card-content {
   padding-left: 0 !important;
@@ -3782,6 +3821,12 @@ body::after {
   gap: 14px !important;
 }
 
+/* 关键修复：覆盖基础样式的 .project-card{grid-column:span 4}，
+   否则每张卡都会占满整行，导致三列布局失效、卡片被拉得又长又大 */
+.projects-grid > .project-card {
+  grid-column: auto !important;
+}
+
 .project-card .project-image {
   height: 96px !important;
   position: relative;
@@ -3815,9 +3860,20 @@ body::after {
   height: 40px;
   border-radius: 50%;
   color: #fff;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.project-cover-meta {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.28);
+  letter-spacing: 0.2px;
 }
 
 .project-info {
@@ -3969,4 +4025,23 @@ html {
 .function-card.show {
   animation: none !important; /* 关闭 fadeUp 滚动渐显 */
   transform: none !important;
+}
+
+/* ---- 左栏：内容超出时允许纵向滚动，避免底部被裁切 ---- */
+@media (min-width: 841px) {
+  .yy-left {
+    overflow-y: auto !important;
+    scrollbar-width: none;
+  }
+
+  .yy-left::-webkit-scrollbar {
+    display: none;
+  }
+
+  .yy-left .profile-card {
+    height: auto !important;
+    min-height: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
 }

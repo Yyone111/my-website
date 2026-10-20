@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const TAGS = ["Elden Ring", "Varolant", "CS2", "Life", "Travle"];
+const TAGS = ["Elden Ring", "Valorant", "CS2", "Life", "Travel"];
 
 const PROFILE_HIGHLIGHTS = [
   "可承接网站重构与性能优化",
@@ -36,13 +36,14 @@ const STATS = [
   { value: "24/7", label: "在线模式" },
 ];
 
-// 精选作品（封面用 CSS 渐变占位，可替换为真实图片）
+// 精选作品（封面用品牌色块 + 图标，可按需替换为真实截图）
 const PROJECTS = [
   {
     title: "HomePage 个人主页",
-    desc: "React + Vite 单页站点，玻璃拟态设计，集成 AI 聊天助手与可拖拽浮窗。",
+    desc: "React + Vite 单页站点，集成 AI 聊天助手与可拖拽浮窗，全端自适应。",
     tags: ["React", "Vite", "AI"],
-    cover: "linear-gradient(130deg, #3f83f8 0%, #6d5dfc 55%, #a855f7 100%)",
+    tone: "#3f6cac",
+    meta: "进行中 · 主要作品",
     icon: "rocket",
     href: "#projects",
   },
@@ -50,7 +51,8 @@ const PROJECTS = [
     title: "AI 站点助手",
     desc: "对话式 AI 助手，支持流式渲染、历史上下文与本地/线上双端切换。",
     tags: ["Stream", "API", "UX"],
-    cover: "linear-gradient(130deg, #34d399 0%, #3b82f6 55%, #2e9be9 100%)",
+    tone: "#2f8f6b",
+    meta: "已上线 · 流式回复",
     icon: "spark",
     href: "#",
   },
@@ -58,7 +60,8 @@ const PROJECTS = [
     title: "开源小工具集",
     desc: "长期更新的效率工具与踩坑笔记，帮助后来者少走弯路。",
     tags: ["Tools", "Blog", "OSS"],
-    cover: "linear-gradient(130deg, #fbbf24 0%, #f97316 55%, #ef4444 100%)",
+    tone: "#9a6a2f",
+    meta: "持续更新 · 开源",
     icon: "lab",
     href: "#",
   },
@@ -95,7 +98,11 @@ const HERO_SLOGANS = [
   { text: "全栈开发 · 热爱设计与交互", accent: "gradientText" },
 ];
 
-const ICOMAT_NAV_ITEMS = ["WORK", "TECH", "INDUSTRIES"];
+const ICOMAT_NAV_ITEMS = [
+  { label: "作品", href: "#projects" },
+  { label: "技能", href: "#skills" },
+  { label: "足迹", href: "#experience" },
+];
 const BRAND_TEXT = "YANG YAO";
 
 function UiIcon({ name, className = "ui-icon" }) {
@@ -241,7 +248,7 @@ function App() {
     chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
   }, [chatMessages, isSending, isChatOpen]);
 
-  // ★ 打字机副标题（动效1：克制轮换，尊重 prefers-reduced-motion）
+  // 打字机副标题（动效1：克制轮换，尊重 prefers-reduced-motion）
   useEffect(() => {
     const prefersReduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -489,26 +496,29 @@ function App() {
 
           <div className="icomat-nav-links">
             {ICOMAT_NAV_ITEMS.map((item) => (
-              <a key={item} href="#" className="icomat-nav-item">
+              <a key={item.label} href={item.href} className="icomat-nav-item">
                 <span className="icomat-nav-text" aria-hidden="true">
-                  <span>{item}</span>
-                  <span>{item}</span>
+                  <span>{item.label}</span>
+                  <span>{item.label}</span>
                 </span>
               </a>
             ))}
-            <a href="#" className="icomat-nav-item icomat-nav-item-company">
+            <a
+              href="#about"
+              className="icomat-nav-item icomat-nav-item-company"
+            >
               <span className="icomat-nav-text" aria-hidden="true">
-                <span>THE COMPANY</span>
-                <span>THE COMPANY</span>
-              </span>
-              <span className="icomat-nav-caret" aria-hidden="true">
-                ▼
+                <span>关于我</span>
+                <span>关于我</span>
               </span>
             </a>
-            <a href="#" className="icomat-nav-item icomat-nav-item-cta">
+            <a
+              href="mailto:yangyao596@gmail.com"
+              className="icomat-nav-item icomat-nav-item-cta"
+            >
               <span className="icomat-nav-text" aria-hidden="true">
-                <span>BUILD W/ ICOMAT</span>
-                <span>BUILD W/ ICOMAT</span>
+                <span>联系我</span>
+                <span>联系我</span>
               </span>
             </a>
           </div>
@@ -677,7 +687,7 @@ function App() {
               <h1 className="hero-landing-title">
                 Hello, I'm <span className="gradientText">Yy</span>
               </h1>
-              {/* ★ 动效1：打字机轮换副标题 */}
+              {/* 动效1：打字机轮换副标题 */}
               <p className="hero-landing-subtitle typewriter-line">
                 <span className={HERO_SLOGANS[sloganIndex].accent}>
                   {typedText}
@@ -716,7 +726,8 @@ function App() {
                 </header>
                 <div className="card-content">
                   <p className="about-lead">
-                    全能型全栈开发者，专注 React / Vue 前端与 Node.js 后端。
+                    全能型全栈开发者，专注 React / Vue 前端与 Node.js
+                    后端，喜欢把复杂交互做得简单好用。
                   </p>
                   <div className="about-facts">
                     <span>
@@ -725,6 +736,23 @@ function App() {
                     <span>
                       <UiIcon name="email" /> yangyao596@gmail.com
                     </span>
+                    <span>
+                      <UiIcon name="clock" /> 工作日 10:00 - 22:00
+                    </span>
+                  </div>
+                  <div className="about-metrics">
+                    <div className="about-metric">
+                      <strong>3+</strong>
+                      <span>年开发经验</span>
+                    </div>
+                    <div className="about-metric">
+                      <strong>10+</strong>
+                      <span>完成项目</span>
+                    </div>
+                    <div className="about-metric">
+                      <strong>6</strong>
+                      <span>主力技术栈</span>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -775,11 +803,12 @@ function App() {
                     <div
                       className="project-image"
                       role="presentation"
-                      style={{ background: project.cover }}
+                      style={{ background: project.tone }}
                     >
                       <span className="project-cover-icon">
                         <UiIcon name={project.icon} />
                       </span>
+                      <span className="project-cover-meta">{project.meta}</span>
                     </div>
                     <div className="project-info">
                       <h4>{project.title}</h4>
