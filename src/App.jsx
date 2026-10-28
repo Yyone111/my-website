@@ -1,144 +1,36 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import UiIcon from "./components/UiIcon";
+import {
+  BRAND_TEXT,
+  CONTACT_ITEMS,
+  NAV_ITEMS,
+  PROFILE_HIGHLIGHTS,
+  STACK_FOCUS,
+  TAGS,
+} from "./data";
+import Home from "./pages/Home";
+import Projects from "./pages/Projects";
+import Skills from "./pages/Skills";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 
-const TAGS = ["Elden Ring", "Valorant", "CS2", "Life", "Travel"];
+const DEFAULT_ROUTE = "home";
 
-const PROFILE_HIGHLIGHTS = [
-  "可承接网站重构与性能优化",
-  "注重交互体验和可维护性",
-  "长期更新博客与开源小工具",
-];
+const routeFromHash = () => {
+  const raw = window.location.hash.replace(/^#\/?/, "");
+  const key = raw.split("?")[0];
+  return NAV_ITEMS.some((item) => item.key === key) ? key : DEFAULT_ROUTE;
+};
 
-const CONTACT_ITEMS = [
-  {
-    label: "邮箱",
-    value: "yangyao596@gmail.com",
-    type: "email",
-    href: "mailto:yangyao596@gmail.com",
-  },
-  { label: "在线状态", value: "工作日 10:00 - 22:00", type: "clock" },
-];
+const hashForRoute = (key) => {
+  const item = NAV_ITEMS.find((entry) => entry.key === key);
+  return item ? item.hash : "#/";
+};
 
-const STACK_FOCUS = [
-  "React",
-  "Vue",
-  "TypeScript",
-  "Node.js",
-  "MongoDB",
-  "Vite",
-];
-
-/* ===== 右侧内容区数据（方案 A：Hero → 内容瀑布）===== */
-
-// 统计徽标区
-const STATS = [
-  { value: "6+", label: "技术栈深耕" },
-  { value: "∞", label: "探索在路上" },
-  { value: "24/7", label: "在线模式" },
-];
-
-// 精选作品（封面用品牌色块 + 图标，可按需替换为真实截图）
-const PROJECTS = [
-  {
-    title: "HomePage 个人主页",
-    desc: "React + Vite 单页站点，集成 AI 聊天助手与可拖拽浮窗，全端自适应。",
-    tags: ["React", "Vite", "AI"],
-    tone: "#3f6cac",
-    meta: "进行中 · 主要作品",
-    icon: "rocket",
-    href: "#projects",
-  },
-  {
-    title: "AI 站点助手",
-    desc: "对话式 AI 助手，支持流式渲染、历史上下文与本地/线上双端切换。",
-    tags: ["Stream", "API", "UX"],
-    tone: "#2f8f6b",
-    meta: "已上线 · 流式回复",
-    icon: "spark",
-    href: "#",
-  },
-  {
-    title: "开源小工具集",
-    desc: "长期更新的效率工具与踩坑笔记，帮助后来者少走弯路。",
-    tags: ["Tools", "Blog", "OSS"],
-    tone: "#9a6a2f",
-    meta: "持续更新 · 开源",
-    icon: "lab",
-    href: "#",
-  },
-];
-
-// 技能明细（level 为自评百分比，可按实际调整）
-const SKILLS = [
-  { name: "React", level: 88, note: "组件化 / Hooks / 状态管理" },
-  { name: "Vue", level: 80, note: "Composition API / 生态工程" },
-  { name: "TypeScript", level: 82, note: "类型系统 / 工程化实践" },
-  { name: "Node.js", level: 78, note: "接口服务 / 流式响应" },
-  { name: "MongoDB", level: 74, note: "数据建模 / 聚合查询" },
-  { name: "Vite", level: 90, note: "构建工具 / 开发体验" },
-];
-
-// 成长时间线（示例占位，可替换为真实经历）
-const TIMELINE = [
-  {
-    period: "2026",
-    text: "持续打磨个人站点：AI 助手接入、流式聊天可视化、动效体系化。",
-  },
-  {
-    period: "2025",
-    text: "搭建 HomePage 全栈架构：React 前端 + Node 后端 + Render 部署。",
-  },
-  { period: "2024", text: "系统输出博客与技术笔记，沉淀前端工程化实践。" },
-  { period: "2023", text: "踏足全栈开发，从 Vue 走向 React 与 Node.js。" },
-];
-
-// Hero 打字机轮换语录
-const HERO_SLOGANS = [
-  { text: "永远在路上 · 保持输出与探索", accent: "gradientText" },
-  { text: "Fall In Life · Love", accent: "purpleText" },
-  { text: "全栈开发 · 热爱设计与交互", accent: "gradientText" },
-];
-
-const ICOMAT_NAV_ITEMS = [
-  { label: "作品", href: "#projects" },
-  { label: "技能", href: "#skills" },
-  { label: "足迹", href: "#experience" },
-];
-const BRAND_TEXT = "YANG YAO";
-
-function UiIcon({ name, className = "ui-icon" }) {
-  const icons = {
-    spark: (
-      <path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z" />
-    ),
-    code: <path d="M9 8L5 12l4 4M15 8l4 4-4 4M13 6l-2 12" />,
-    pin: (
-      <path d="M12 21s6-5.1 6-10a6 6 0 10-12 0c0 4.9 6 10 6 10zM12 13a2 2 0 100-4 2 2 0 000 4z" />
-    ),
-    note: <path d="M7 4h10a2 2 0 012 2v12l-4-2-4 2-4-2-4 2V6a2 2 0 012-2h2" />,
-    cloud: <path d="M8 18h9a4 4 0 10-.7-7.9A5 5 0 007 11a3 3 0 001 7z" />,
-    lab: <path d="M10 3h4M10 3v4l-4 8a3 3 0 003 4h6a3 3 0 003-4l-4-8V3" />,
-    idea: (
-      <path d="M9 18h6M10 21h4M12 3a6 6 0 00-3 11c.7.5 1.2 1.3 1.2 2.2h3.6c0-.9.5-1.7 1.2-2.2A6 6 0 0012 3z" />
-    ),
-    chart: <path d="M5 19h14M8 16V9M12 16V5M16 16v-7" />,
-    rocket: <path d="M5 19l4-1 9-9a4 4 0 00-5-5l-9 9-1 4 2 2zM12 7l5 5" />,
-    email: <path d="M4 7h16v10H4zM4 8l8 6 8-6" />,
-    clock: <path d="M12 7v5l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
-    check: <path d="M5 13l4 4L19 7" />,
-  };
-
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      {icons[name] || icons.spark}
-    </svg>
-  );
-}
+const labelForRoute = (key) => {
+  const item = NAV_ITEMS.find((entry) => entry.key === key);
+  return item ? item.label : "";
+};
 
 function App() {
   const FLOAT_BTN_SIZE = 56;
@@ -146,6 +38,7 @@ function App() {
   const CHAT_PANEL_GAP = 12;
   const rootRef = useRef(null);
   const chatBodyRef = useRef(null);
+  const pendingRouteRef = useRef(null);
   const dragStateRef = useRef({
     pointerId: null,
     startX: 0,
@@ -154,6 +47,11 @@ function App() {
     originY: 0,
     moved: false,
   });
+  const [route, setRoute] = useState(() =>
+    typeof window === "undefined" ? DEFAULT_ROUTE : routeFromHash(),
+  );
+  const [veilPhase, setVeilPhase] = useState("idle");
+  const [pendingLabel, setPendingLabel] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -168,8 +66,6 @@ function App() {
   });
   const [chatInput, setChatInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [typedText, setTypedText] = useState("");
-  const [sloganIndex, setSloganIndex] = useState(0);
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -181,6 +77,61 @@ function App() {
     window.location.hostname === "localhost"
       ? "http://localhost:10000/ai/chat"
       : "https://ownwebbackend.onrender.com/ai/chat";
+
+  /* ===== 路由与整屏转场 ===== */
+  const navigate = useCallback(
+    (next) => {
+      if (veilPhase !== "idle") return;
+      if (next === route) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      pendingRouteRef.current = next;
+      setPendingLabel(labelForRoute(next));
+      setIsNavOpen(false);
+      setVeilPhase("in");
+    },
+    [route, veilPhase],
+  );
+
+  // 遮罩铺满后切换内容，再让遮罩退场
+  useEffect(() => {
+    if (veilPhase !== "in") return;
+    const timer = setTimeout(() => {
+      const next = pendingRouteRef.current;
+      if (next && next !== route) {
+        window.history.pushState(null, "", hashForRoute(next));
+        setRoute(next);
+        window.scrollTo({ top: 0, behavior: "auto" });
+      }
+      pendingRouteRef.current = null;
+      setVeilPhase("out");
+    }, 420);
+    return () => clearTimeout(timer);
+  }, [veilPhase, route]);
+
+  useEffect(() => {
+    if (veilPhase !== "out") return;
+    const timer = setTimeout(() => setVeilPhase("idle"), 620);
+    return () => clearTimeout(timer);
+  }, [veilPhase]);
+
+  // 浏览器前进 / 后退、站内 hash 跳转同样走转场
+  useEffect(() => {
+    const handleRouteChange = () => {
+      const next = routeFromHash();
+      if (next === route) return;
+      pendingRouteRef.current = next;
+      setPendingLabel(labelForRoute(next));
+      setVeilPhase((phase) => (phase === "idle" ? "in" : phase));
+    };
+    window.addEventListener("popstate", handleRouteChange);
+    window.addEventListener("hashchange", handleRouteChange);
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+      window.removeEventListener("hashchange", handleRouteChange);
+    };
+  }, [route]);
 
   const clampWidgetPosition = (x, y) => {
     const maxX = Math.max(
@@ -223,63 +174,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!rootRef.current) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("show");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -50px 0px" },
-    );
-
-    const cards = rootRef.current.querySelectorAll(
-      ".function-card, .project-card",
-    );
-    cards.forEach((card) => observer.observe(card));
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
     if (!chatBodyRef.current) return;
     chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
   }, [chatMessages, isSending, isChatOpen]);
-
-  // 打字机副标题（动效1：克制轮换，尊重 prefers-reduced-motion）
-  useEffect(() => {
-    const prefersReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    const current = HERO_SLOGANS[sloganIndex];
-
-    if (prefersReduced) {
-      setTypedText(current.text);
-      const timer = setTimeout(
-        () => setSloganIndex((i) => (i + 1) % HERO_SLOGANS.length),
-        4200,
-      );
-      return () => clearTimeout(timer);
-    }
-
-    setTypedText("");
-    let charIndex = 0;
-    const typeTimer = setInterval(() => {
-      charIndex += 1;
-      setTypedText(current.text.slice(0, charIndex));
-      if (charIndex >= current.text.length) {
-        clearInterval(typeTimer);
-        setTimeout(
-          () => setSloganIndex((i) => (i + 1) % HERO_SLOGANS.length),
-          2600,
-        );
-      }
-    }, 110);
-
-    return () => clearInterval(typeTimer);
-  }, [sloganIndex]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -463,6 +360,21 @@ function App() {
     }
   };
 
+  const renderPage = () => {
+    switch (route) {
+      case "projects":
+        return <Projects />;
+      case "skills":
+        return <Skills />;
+      case "about":
+        return <About onNavigate={navigate} />;
+      case "contact":
+        return <Contact onOpenQQ={() => setIsModalOpen(true)} />;
+      default:
+        return <Home onNavigate={navigate} />;
+    }
+  };
+
   return (
     <>
       <div className="site-top-line">
@@ -495,34 +407,38 @@ function App() {
           </button>
 
           <div className="icomat-nav-links">
-            {ICOMAT_NAV_ITEMS.map((item) => (
-              <a key={item.label} href={item.href} className="icomat-nav-item">
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                className={`icomat-nav-item ${
+                  item.key === "contact" ? "icomat-nav-item-cta" : ""
+                } ${route === item.key ? "is-active" : ""}`}
+                aria-current={route === item.key ? "page" : undefined}
+                onClick={() => navigate(item.key)}
+              >
                 <span className="icomat-nav-text" aria-hidden="true">
                   <span>{item.label}</span>
                   <span>{item.label}</span>
                 </span>
-              </a>
+              </button>
             ))}
-            <a
-              href="#about"
-              className="icomat-nav-item icomat-nav-item-company"
-            >
-              <span className="icomat-nav-text" aria-hidden="true">
-                <span>关于我</span>
-                <span>关于我</span>
-              </span>
-            </a>
-            <a
-              href="mailto:yangyao596@gmail.com"
-              className="icomat-nav-item icomat-nav-item-cta"
-            >
-              <span className="icomat-nav-text" aria-hidden="true">
-                <span>联系我</span>
-                <span>联系我</span>
-              </span>
-            </a>
           </div>
         </nav>
+      </div>
+
+      <div
+        className={`page-veil ${
+          veilPhase === "in" ? "is-in" : veilPhase === "out" ? "is-out" : ""
+        }`}
+        aria-hidden="true"
+      >
+        <span className="veil-panel" />
+        <span className="veil-panel" />
+        <span className="veil-panel" />
+        <span className="veil-label">
+          {pendingLabel || labelForRoute(route)}
+        </span>
       </div>
 
       <div
@@ -682,167 +598,9 @@ function App() {
         </aside>
 
         <section className="yy-right">
-          <header>
-            <section className="hero-landing">
-              <h1 className="hero-landing-title">
-                Hello, I'm <span className="gradientText">Yy</span>
-              </h1>
-              {/* 动效1：打字机轮换副标题 */}
-              <p className="hero-landing-subtitle typewriter-line">
-                <span className={HERO_SLOGANS[sloganIndex].accent}>
-                  {typedText}
-                </span>
-                <span className="typewriter-caret" aria-hidden="true" />
-              </p>
-              <div className="hero-actions">
-                <a className="hero-btn" href="#projects">
-                  <UiIcon name="rocket" className="hero-btn-icon" /> 查看作品
-                </a>
-                <a className="hero-btn hero-btn-secondary" href="#experience">
-                  <UiIcon name="pin" className="hero-btn-icon" /> 我的足迹
-                </a>
-              </div>
-              {/* 统计徽标 */}
-              <div className="stats-grid hero-stats">
-                {STATS.map((stat) => (
-                  <div className="stat-item" key={stat.label}>
-                    <p className="stat-value">{stat.value}</p>
-                    <p className="stat-label">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </header>
-
-          <main className="yy-content">
-            {/* 关于 + 技能 并排（紧凑上半部） */}
-            <section className="content-pair">
-              <section className="function-card about-card" id="about">
-                <header className="card-header">
-                  <span className="card-icon">
-                    <UiIcon name="idea" />
-                  </span>
-                  <h3 className="card-title">关于我</h3>
-                </header>
-                <div className="card-content">
-                  <p className="about-lead">
-                    全能型全栈开发者，专注 React / Vue 前端与 Node.js
-                    后端，喜欢把复杂交互做得简单好用。
-                  </p>
-                  <div className="about-facts">
-                    <span>
-                      <UiIcon name="pin" /> ALLWORLD · Iceland
-                    </span>
-                    <span>
-                      <UiIcon name="email" /> yangyao596@gmail.com
-                    </span>
-                    <span>
-                      <UiIcon name="clock" /> 工作日 10:00 - 22:00
-                    </span>
-                  </div>
-                  <div className="about-metrics">
-                    <div className="about-metric">
-                      <strong>3+</strong>
-                      <span>年开发经验</span>
-                    </div>
-                    <div className="about-metric">
-                      <strong>10+</strong>
-                      <span>完成项目</span>
-                    </div>
-                    <div className="about-metric">
-                      <strong>6</strong>
-                      <span>主力技术栈</span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* 技能明细：两栏紧凑网格 */}
-              <section className="function-card skills-card" id="skills">
-                <header className="card-header">
-                  <span className="card-icon">
-                    <UiIcon name="code" />
-                  </span>
-                  <h3 className="card-title">技能</h3>
-                </header>
-                <div className="skills-compact">
-                  {SKILLS.map((skill) => (
-                    <div className="skill-chip" key={skill.name}>
-                      <div className="skill-chip-head">
-                        <span className="skill-chip-name">{skill.name}</span>
-                        <span className="skill-chip-level">{skill.level}%</span>
-                      </div>
-                      <div className="skill-bar">
-                        <div
-                          className="skill-progress"
-                          style={{ width: `${skill.level}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </section>
-
-            {/* 精选作品：横向卡片，封面高 100px 更紧凑 */}
-            <section className="function-card projects-section" id="projects">
-              <header className="card-header">
-                <span className="card-icon">
-                  <UiIcon name="chart" />
-                </span>
-                <h3 className="card-title">精选作品</h3>
-              </header>
-              <div className="projects-grid">
-                {PROJECTS.map((project) => (
-                  <a
-                    key={project.title}
-                    className="project-card"
-                    href={project.href}
-                    aria-label={project.title}
-                  >
-                    <div
-                      className="project-image"
-                      role="presentation"
-                      style={{ background: project.tone }}
-                    >
-                      <span className="project-cover-icon">
-                        <UiIcon name={project.icon} />
-                      </span>
-                      <span className="project-cover-meta">{project.meta}</span>
-                    </div>
-                    <div className="project-info">
-                      <h4>{project.title}</h4>
-                      <p>{project.desc}</p>
-                      <div className="project-tags">
-                        {project.tags.map((tag) => (
-                          <span key={tag}>{tag}</span>
-                        ))}
-                      </div>
-                      <span className="project-link">了解更多 →</span>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </section>
-
-            {/* 成长足迹：紧凑两列网格 */}
-            <section className="function-card timeline-card" id="experience">
-              <header className="card-header">
-                <span className="card-icon">
-                  <UiIcon name="idea" />
-                </span>
-                <h3 className="card-title">成长足迹</h3>
-              </header>
-              <div className="timeline-grid">
-                {TIMELINE.map((item) => (
-                  <div className="timeline-row" key={item.period}>
-                    <p className="timeline-period">{item.period}</p>
-                    <p className="timeline-text">{item.text}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </main>
+          <div className="yy-content page-stage" key={route}>
+            {renderPage()}
+          </div>
         </section>
       </div>
 
