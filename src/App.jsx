@@ -461,7 +461,7 @@ function App() {
       </div>
 
       <div className="yy-main" ref={rootRef}>
-        <aside className="yy-left">
+        <aside className={`yy-left ${route === "home" ? "" : "is-compact"}`}>
           <div className="profile-card">
             <div className="avatar-container">
               <img src="/static/img/head.jpg" alt="Yy" className="avatar" />
@@ -526,6 +526,7 @@ function App() {
                 />
               </button>
             </div>
+
             <div className="left-panel-block">
               <h3 className="title">快速联系</h3>
               <div className="left-contact-list">
@@ -561,13 +562,15 @@ function App() {
               </div>
             </div>
 
-            <h3 className="title">个人标签</h3>
-            <div className="tags">
-              {TAGS.map((tag) => (
-                <span className="tag" key={tag}>
-                  {tag}
-                </span>
-              ))}
+            <div className="left-panel-block">
+              <h3 className="title">个人标签</h3>
+              <div className="tags">
+                {TAGS.map((tag) => (
+                  <span className="tag" key={tag}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
 
             <div className="left-panel-block">

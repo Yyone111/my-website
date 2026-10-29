@@ -26,7 +26,8 @@ export default function Contact({ onOpenQQ }) {
               </div>
               {item.action ? (
                 <span className="contact-card-action">
-                  {item.action} <UiIcon name="arrow" className="contact-arrow" />
+                  {item.action}{" "}
+                  <UiIcon name="arrow" className="contact-arrow" />
                 </span>
               ) : (
                 <span className="contact-card-action contact-card-action-muted">
@@ -79,29 +80,24 @@ export default function Contact({ onOpenQQ }) {
         })}
       </div>
 
-      <section className="function-card contact-cta reveal" style={{ "--i": 5 }}>
+      <section
+        className="function-card contact-cta reveal"
+        style={{ "--i": 5 }}
+      >
         <div className="contact-cta-text">
           <p className="page-head-kicker">AVAILABLE FOR WORK</p>
           <h3 className="contact-cta-title">正在寻找新的合作机会</h3>
           <p className="contact-cta-desc">
             可以承接网站重构、性能优化与全栈小项目，也可以只是聊聊技术。
+            右下角的小Y也能先回答一些关于站点与经历的问题。
           </p>
         </div>
-        <a className="hero-btn contact-cta-btn" href="mailto:yangyao596@gmail.com">
+        <a
+          className="hero-btn contact-cta-btn"
+          href="mailto:yangyao596@gmail.com"
+        >
           发送邮件 <UiIcon name="arrow" className="hero-btn-icon" />
         </a>
-      </section>
-
-      <section className="function-card reveal" style={{ "--i": 6 }}>
-        <header className="card-header">
-          <span className="card-icon">
-            <UiIcon name="chat" />
-          </span>
-          <h3 className="card-title">也可以问问小Y</h3>
-        </header>
-        <p className="contact-note">
-          右下角的 AI 助手能回答关于站点、经历与技术栈的问题。如果它不知道，说明该补文档了。
-        </p>
       </section>
     </div>
   );

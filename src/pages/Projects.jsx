@@ -74,21 +74,12 @@ export default function Projects() {
                 <h4>{project.title}</h4>
                 <span className="project-category">{project.category}</span>
               </div>
-              <p>{project.detail}</p>
+              <p className="project-desc">{project.detail}</p>
               <div className="project-tags">
                 {project.tags.map((tag) => (
                   <span key={tag}>{tag}</span>
                 ))}
               </div>
-              {project.href ? (
-                <a className="project-link" href={project.href}>
-                  了解更多 →
-                </a>
-              ) : (
-                <span className="project-link project-link-muted">
-                  持续打磨中
-                </span>
-              )}
             </div>
           </article>
         ))}

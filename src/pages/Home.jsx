@@ -95,17 +95,6 @@ export default function Home({ onNavigate }) {
               全能型全栈开发者，专注 React / Vue 前端与 Node.js
               后端，喜欢把复杂交互做得简单好用。
             </p>
-            <div className="about-facts">
-              <span>
-                <UiIcon name="pin" /> ALLWORLD · Iceland
-              </span>
-              <span>
-                <UiIcon name="email" /> yangyao596@gmail.com
-              </span>
-              <span>
-                <UiIcon name="clock" /> 工作日 10:00 - 22:00
-              </span>
-            </div>
             <div className="about-metrics">
               <div className="about-metric">
                 <strong>3+</strong>

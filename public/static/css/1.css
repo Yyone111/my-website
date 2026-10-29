@@ -1749,6 +1749,29 @@ body::after {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
+/* ---- 二级页面：左栏收敛为轻量资料头，避免与正文重复 ---- */
+.yy-left.is-compact {
+  position: sticky;
+  top: 14px;
+}
+
+.yy-left.is-compact .profile-card {
+  padding: 22px 20px;
+  border-radius: 18px;
+}
+
+.yy-left.is-compact .left-panel-block {
+  display: none;
+}
+
+.yy-left.is-compact .info-item {
+  padding: 8px 0 10px;
+}
+
+.yy-left.is-compact .avatar-container {
+  margin-bottom: 12px;
+}
+
 @media (max-width: 840px) {
   .yy-left .profile-card {
     padding: 22px 18px;
@@ -3711,7 +3734,7 @@ body::after {
   font-size: 14px;
   line-height: 1.7;
   color: var(--warm-ink) !important;
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .about-facts {
@@ -3741,7 +3764,7 @@ body::after {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 .about-metric {
@@ -4044,6 +4067,15 @@ html {
     max-height: none !important;
     overflow: visible !important;
   }
+
+  /* 收敛态左栏不需要滚动与拉伸 */
+  .yy-left.is-compact {
+    overflow-y: visible !important;
+  }
+
+  .yy-left.is-compact .profile-card {
+    min-height: 0 !important;
+  }
 }
 
 /* ==========================================================================
@@ -4322,6 +4354,52 @@ html {
   color: #5b6472;
 }
 
+/* ---- 页面标题下的技术栈标签 ---- */
+.page-head-tags {
+  margin-top: 14px;
+  gap: 7px;
+}
+
+.page-head-tags .stack-focus-tag {
+  font-size: 11.5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid #dbe7f6;
+  background: #f5faff;
+  color: #4a6b93;
+}
+
+/* ---- 技能等级说明 ---- */
+.skill-legend {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.skill-legend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: #f7faff;
+  border: 1px solid #e6eefb;
+}
+
+.skill-legend-item strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2f5580;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.skill-legend-item span {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #6a7889;
+}
+
 /* ---- 作品页筛选 ---- */
 .filter-bar {
   display: flex;
@@ -4424,11 +4502,12 @@ html {
   letter-spacing: 0.06em;
 }
 
-.project-link-muted {
-  background: #eef2f7 !important;
-  border: 1px solid #e0e7f0 !important;
-  color: #8a99ab !important;
-  cursor: default;
+/* 作品页描述统一排版 */
+.projects-page-grid .project-desc {
+  font-size: 12.5px !important;
+  line-height: 1.7 !important;
+  color: var(--warm-ink-soft) !important;
+  margin-bottom: 10px !important;
 }
 
 /* 清除基础样式遗留的位移，避免未加 reveal 的卡片整体下移 */
@@ -4437,21 +4516,6 @@ html {
 }
 
 /* ---- 技能页 ---- */
-.skills-stack-row {
-  margin-bottom: 12px;
-}
-
-.skills-overview {
-  gap: 10px 14px !important;
-}
-
-.skill-chip-note {
-  margin: 5px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
-  color: #7c8ba0;
-}
-
 .skill-group-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4535,10 +4599,6 @@ html {
   margin-bottom: 4px;
 }
 
-.about-tags {
-  margin: 14px 0 0 !important;
-}
-
 .milestone-list {
   list-style: none;
   margin: 0;
@@ -4583,9 +4643,9 @@ html {
 
 .milestone-head {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 3px;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 4px;
 }
 
 .milestone-period {
@@ -4679,8 +4739,29 @@ html {
   color: #6a7889;
 }
 
-.about-highlight-list {
-  gap: 8px !important;
+/* ---- 关于页：简介 + CTA 双栏 ---- */
+.about-layout {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.about-intro {
+  display: flex;
+  flex-direction: column;
+}
+
+.about-layout .about-cta {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(150deg, #f4f9ff, #edf4ff) !important;
+}
+
+.about-layout .about-cta .page-head-kicker {
+  color: #6d8fff;
 }
 
 /* ---- 联系页 ---- */
@@ -4808,13 +4889,6 @@ html {
   flex: 0 0 auto;
 }
 
-.contact-note {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.75;
-  color: #6a7889;
-}
-
 /* ---- 按钮在 button 标签上的适配 ---- */
 button.hero-btn {
   cursor: pointer;
@@ -4828,8 +4902,13 @@ button.hero-btn {
   }
 
   .skill-group-grid,
-  .principle-grid {
+  .principle-grid,
+  .skill-legend {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .about-layout {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -4837,7 +4916,8 @@ button.hero-btn {
   .projects-page-grid,
   .skill-group-grid,
   .principle-grid,
-  .contact-grid {
+  .contact-grid,
+  .skill-legend {
     grid-template-columns: 1fr !important;
   }
 
@@ -4847,6 +4927,11 @@ button.hero-btn {
 
   .about-cta,
   .contact-cta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .about-layout .about-cta {
     flex-direction: column;
     align-items: flex-start;
   }
