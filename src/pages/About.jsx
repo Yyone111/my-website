@@ -64,26 +64,46 @@ export default function About({ onNavigate }) {
           </div>
         </section>
 
-        <section
-          className="function-card about-cta reveal"
-          style={{ "--i": 2 }}
-        >
-          <p className="page-head-kicker">OPEN TO WORK</p>
-          <h4 className="about-cta-title">有想法想聊聊？</h4>
-          <p className="about-cta-text">
-            无论是合作、外包还是纯粹的技术交流，都欢迎直接找我。
-          </p>
-          <button
-            type="button"
-            className="hero-btn"
-            onClick={() => onNavigate("contact")}
+        <div className="about-side">
+          <section
+            className="function-card about-cta reveal"
+            style={{ "--i": 2 }}
           >
-            联系我 <UiIcon name="arrow" className="hero-btn-icon" />
-          </button>
-        </section>
+            <p className="page-head-kicker">OPEN TO WORK</p>
+            <h4 className="about-cta-title">有想法想聊聊？</h4>
+            <p className="about-cta-text">
+              无论是合作、外包还是纯粹的技术交流，都欢迎直接找我。
+            </p>
+            <button
+              type="button"
+              className="hero-btn"
+              onClick={() => onNavigate("contact")}
+            >
+              联系我 <UiIcon name="arrow" className="hero-btn-icon" />
+            </button>
+          </section>
+
+          <div className="about-principles">
+            {PRINCIPLES.map((item, index) => (
+              <section
+                className="function-card principle-card reveal"
+                style={{ "--i": index + 3 }}
+                key={item.title}
+              >
+                <span className="principle-icon">
+                  <UiIcon name={item.icon} />
+                </span>
+                <div className="principle-body">
+                  <h4 className="principle-title">{item.title}</h4>
+                  <p className="principle-text">{item.text}</p>
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <section className="function-card reveal" style={{ "--i": 3 }}>
+      <section className="function-card reveal" style={{ "--i": 6 }}>
         <header className="card-header">
           <span className="card-icon">
             <UiIcon name="chart" />
@@ -106,22 +126,6 @@ export default function About({ onNavigate }) {
           ))}
         </ol>
       </section>
-
-      <div className="principle-grid">
-        {PRINCIPLES.map((item, index) => (
-          <section
-            className="function-card principle-card reveal"
-            style={{ "--i": index + 4 }}
-            key={item.title}
-          >
-            <span className="principle-icon">
-              <UiIcon name={item.icon} />
-            </span>
-            <h4 className="principle-title">{item.title}</h4>
-            <p className="principle-text">{item.text}</p>
-          </section>
-        ))}
-      </div>
     </div>
   );
 }

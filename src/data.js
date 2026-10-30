@@ -243,7 +243,7 @@ export const CONTACT_CARDS = [
   },
   {
     key: "bilibili",
-    label: "Bilibili",
+    label: "哔哩哔哩",
     value: "space.bilibili.com/456713538",
     desc: "日常记录、折腾过程与一些不太正经的分享。",
     icon: "play",

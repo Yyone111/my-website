@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import UiIcon from "./components/UiIcon";
+import ParticleField from "./components/ParticleField";
 import {
   BRAND_TEXT,
   CONTACT_ITEMS,
@@ -460,8 +461,10 @@ function App() {
         />
       </div>
 
+      <ParticleField />
+
       <div className="yy-main" ref={rootRef}>
-        <aside className={`yy-left ${route === "home" ? "" : "is-compact"}`}>
+        <aside className="yy-left">
           <div className="profile-card">
             <div className="avatar-container">
               <img src="/static/img/head.jpg" alt="Yy" className="avatar" />
@@ -527,75 +530,67 @@ function App() {
               </button>
             </div>
 
-            <div className="left-panel-block">
-              <h3 className="title">快速联系</h3>
-              <div className="left-contact-list">
-                {CONTACT_ITEMS.map((item) => {
-                  const content = (
-                    <>
-                      <span className="left-contact-icon">
-                        <UiIcon name={item.type} />
-                      </span>
-                      <span className="left-contact-label">{item.label}</span>
-                      <span className="left-contact-value">{item.value}</span>
-                    </>
-                  );
-
-                  if (item.href) {
-                    return (
-                      <a
-                        key={item.label}
-                        className="left-contact-item"
-                        href={item.href}
-                      >
-                        {content}
-                      </a>
-                    );
-                  }
-
-                  return (
-                    <div key={item.label} className="left-contact-item">
-                      {content}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="left-panel-block">
-              <h3 className="title">个人标签</h3>
-              <div className="tags">
-                {TAGS.map((tag) => (
-                  <span className="tag" key={tag}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="left-panel-block">
-              <h3 className="title">个人简介</h3>
-              <div className="left-highlight-list">
-                {PROFILE_HIGHLIGHTS.map((item) => (
-                  <p key={item} className="left-highlight-item">
-                    <span className="left-highlight-icon">
-                      <UiIcon name="check" />
+            <h3 className="title">快速联系</h3>
+            <div className="left-contact-list">
+              {CONTACT_ITEMS.map((item) => {
+                const content = (
+                  <>
+                    <span className="left-contact-icon">
+                      <UiIcon name={item.type} />
                     </span>
-                    {item}
-                  </p>
-                ))}
-              </div>
+                    <span className="left-contact-label">{item.label}</span>
+                    <span className="left-contact-value">{item.value}</span>
+                  </>
+                );
+
+                if (item.href) {
+                  return (
+                    <a
+                      key={item.label}
+                      className="left-contact-item"
+                      href={item.href}
+                    >
+                      {content}
+                    </a>
+                  );
+                }
+
+                return (
+                  <div key={item.label} className="left-contact-item">
+                    {content}
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="left-panel-block">
-              <h3 className="title">技术栈方向</h3>
-              <div className="stack-focus-list">
-                {STACK_FOCUS.map((item) => (
-                  <span key={item} className="stack-focus-tag">
-                    {item}
+            <h3 className="title">个人标签</h3>
+            <div className="tags">
+              {TAGS.map((tag) => (
+                <span className="tag" key={tag}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <h3 className="title">个人简介</h3>
+            <div className="left-highlight-list">
+              {PROFILE_HIGHLIGHTS.map((item) => (
+                <p key={item} className="left-highlight-item">
+                  <span className="left-highlight-icon">
+                    <UiIcon name="check" />
                   </span>
-                ))}
-              </div>
+                  {item}
+                </p>
+              ))}
+            </div>
+
+            <h3 className="title">技术栈方向</h3>
+            <div className="stack-focus-list">
+              {STACK_FOCUS.map((item) => (
+                <span key={item} className="stack-focus-tag">
+                  {item}
+                </span>
+              ))}
             </div>
           </div>
         </aside>

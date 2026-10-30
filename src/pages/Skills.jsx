@@ -1,5 +1,34 @@
+import { useEffect, useState } from "react";
 import UiIcon from "../components/UiIcon";
 import { SKILL_GROUPS, STACK_FOCUS } from "../data";
+
+function useCountUp(target, duration = 900) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    const reduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (reduced) {
+      setValue(target);
+      return () => {};
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(target * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
+function CountUpLevel({ value }) {
+  const progress = useCountUp(value);
+  return <>{progress}</>;
+}
 
 export default function Skills() {
   return (
@@ -34,14 +63,25 @@ export default function Skills() {
             </header>
             <p className="skill-group-desc">{group.desc}</p>
             <ul className="skill-detail-list">
-              {group.items.map((item) => (
-                <li className="skill-detail-item" key={item.name}>
+              {group.items.map((item, index) => (
+                <li
+                  className="skill-detail-item"
+                  key={item.name}
+                  style={{ "--order": index }}
+                >
                   <div className="skill-detail-head">
                     <span className="skill-detail-name">{item.name}</span>
-                    <span className="skill-detail-level">{item.level}</span>
+                    <span className="skill-detail-level">
+                      <CountUpLevel value={item.level} />
+                    </span>
                   </div>
                   <div className="skill-detail-bar">
-                    <span style={{ width: `${item.level}%` }} />
+                    <span
+                      style={{
+                        width: `${item.level}%`,
+                        "--progress": `${item.level}%`,
+                      }}
+                    />
                   </div>
                   <p className="skill-detail-note">{item.note}</p>
                 </li>
@@ -54,7 +94,7 @@ export default function Skills() {
       <section className="function-card reveal" style={{ "--i": 4 }}>
         <header className="card-header">
           <span className="card-icon">
-            <UiIcon name="idea" />
+            <UiIcon name="chart" />
           </span>
           <h3 className="card-title">怎么理解这些数字</h3>
         </header>

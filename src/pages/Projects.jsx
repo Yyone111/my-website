@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import UiIcon from "../components/UiIcon";
+import useTiltCards from "../hooks/useTiltCards";
 import { PROJECTS } from "../data";
 
 const ALL = "全部";
 
 export default function Projects() {
   const [active, setActive] = useState(ALL);
+  const projectsRef = useTiltCards(true);
 
   const categories = useMemo(
     () => [ALL, ...Array.from(new Set(PROJECTS.map((p) => p.category)))],
@@ -51,17 +53,17 @@ export default function Projects() {
         ))}
       </div>
 
-      <div className="projects-grid projects-page-grid">
+      <div className="projects-grid projects-page-grid" ref={projectsRef}>
         {list.map((project, index) => (
           <article
             key={project.key}
-            className="project-card reveal"
+            className="project-card tilt-card reveal"
             style={{ "--i": index + 2 }}
           >
             <div
               className="project-image"
               role="presentation"
-              style={{ background: project.tone }}
+              style={{ background: project.tone, "--tone": project.tone }}
             >
               <span className="project-cover-icon">
                 <UiIcon name={project.icon} />

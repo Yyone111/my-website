@@ -1597,10 +1597,6 @@ body::after {
 }
 
 /* 左侧信息增强 */
-.left-panel-block {
-  margin-top: 20px;
-}
-
 .left-highlight-list {
   display: flex;
   flex-direction: column;
@@ -1729,11 +1725,6 @@ body::after {
   color: rgba(27, 55, 93, 0.95);
 }
 
-.yy-left .left-panel-block {
-  padding-top: 8px;
-  border-top: 1px dashed rgba(90, 150, 215, 0.2);
-}
-
 .yy-left .left-contact-item,
 .yy-left .stack-focus-tag {
   border-color: rgba(90, 150, 215, 0.24);
@@ -1747,29 +1738,6 @@ body::after {
     rgba(15, 22, 38, 0.62)
   );
   border-color: rgba(255, 255, 255, 0.12);
-}
-
-/* ---- 二级页面：左栏收敛为轻量资料头，避免与正文重复 ---- */
-.yy-left.is-compact {
-  position: sticky;
-  top: 14px;
-}
-
-.yy-left.is-compact .profile-card {
-  padding: 22px 20px;
-  border-radius: 18px;
-}
-
-.yy-left.is-compact .left-panel-block {
-  display: none;
-}
-
-.yy-left.is-compact .info-item {
-  padding: 8px 0 10px;
-}
-
-.yy-left.is-compact .avatar-container {
-  margin-bottom: 12px;
 }
 
 @media (max-width: 840px) {
@@ -3248,11 +3216,6 @@ body::after {
   gap: 6px;
 }
 
-.yy-left .left-panel-block {
-  margin-top: 12px;
-  padding-top: 6px;
-}
-
 .yy-left .left-highlight-list {
   gap: 7px;
 }
@@ -4067,15 +4030,6 @@ html {
     max-height: none !important;
     overflow: visible !important;
   }
-
-  /* 收敛态左栏不需要滚动与拉伸 */
-  .yy-left.is-compact {
-    overflow-y: visible !important;
-  }
-
-  .yy-left.is-compact .profile-card {
-    min-height: 0 !important;
-  }
 }
 
 /* ==========================================================================
@@ -4602,37 +4556,21 @@ html {
 .milestone-list {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 18px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.milestone-list::before {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 6px;
-  bottom: 6px;
-  width: 2px;
-  border-radius: 2px;
-  background: linear-gradient(
-    180deg,
-    #7bbf52,
-    #4f7cff 70%,
-    rgba(79, 124, 255, 0)
-  );
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 26px;
 }
 
 .milestone-item {
   position: relative;
+  padding-left: 16px;
 }
 
 .milestone-dot {
   position: absolute;
-  left: -18px;
-  top: 6px;
+  left: 0;
+  top: 4px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -4677,12 +4615,6 @@ html {
   font-size: 12.5px;
   line-height: 1.7;
   color: #6a7889;
-}
-
-.principle-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
 }
 
 .principle-card {
@@ -4739,12 +4671,12 @@ html {
   color: #6a7889;
 }
 
-/* ---- 关于页：简介 + CTA 双栏 ---- */
+/* ---- 关于页：简介 + 右列（CTA / 原则）双栏 ---- */
 .about-layout {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 14px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .about-intro {
@@ -4752,16 +4684,47 @@ html {
   flex-direction: column;
 }
 
+.about-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .about-layout .about-cta {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(150deg, #f4f9ff, #edf4ff) !important;
 }
 
 .about-layout .about-cta .page-head-kicker {
   color: #6d8fff;
+}
+
+.about-principles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.about-principles .principle-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 14px 16px !important;
+}
+
+.about-principles .principle-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.about-principles .principle-title {
+  margin: 0;
 }
 
 /* ---- 联系页 ---- */
@@ -4902,7 +4865,6 @@ button.hero-btn {
   }
 
   .skill-group-grid,
-  .principle-grid,
   .skill-legend {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4915,9 +4877,9 @@ button.hero-btn {
 @media (max-width: 840px) {
   .projects-page-grid,
   .skill-group-grid,
-  .principle-grid,
   .contact-grid,
-  .skill-legend {
+  .skill-legend,
+  .milestone-list {
     grid-template-columns: 1fr !important;
   }
 
@@ -4967,5 +4929,376 @@ button.hero-btn {
   .page-veil .veil-label {
     animation: none !important;
     opacity: 0 !important;
+  }
+}
+
+/* ==========================================================================
+   threeui 风格动效增强（新增）
+   ========================================================================== */
+
+/* ---- 粒子星空背景 ---- */
+:root {
+  --particle-rgb: 74, 124, 255;
+  --particle-alpha: 0.3;
+}
+
+body.dark-mode,
+[data-theme="dark"] {
+  --particle-rgb: 130, 180, 255;
+  --particle-alpha: 0.42;
+}
+
+.particle-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.4s ease;
+  /* 避免与 body::before/::after 背景争抢层级 */
+}
+
+/* 内容层放在粒子之上 */
+.yy-main {
+  z-index: 1;
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle-field {
+    opacity: 0.45;
+  }
+}
+
+/* ---- Hero 标题逐字入场 ---- */
+.hero-landing-title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.02em;
+}
+
+.title-char {
+  display: inline-block;
+  transform-origin: 50% 80%;
+  animation: titleCharIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--char-i, 0) * 45ms + 0.1s);
+}
+
+@keyframes titleCharIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em) rotateX(-55deg) scale(0.9);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* 标题悬停微扫光 */
+.hero-landing-title:hover .title-char {
+  text-shadow: 0 0 18px rgba(79, 124, 255, 0.35);
+}
+
+/* ---- 技能进度条：流光 + 内发光 ---- */
+.skill-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-progress {
+  position: relative;
+  overflow: hidden;
+  transform-origin: left center;
+  animation: skillGrow 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.12s;
+}
+
+@keyframes skillGrow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* 前端流动高光（原本 ::after 被主题关闭，改用 ::before） */
+.skill-progress::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 20%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  transform: translateX(-120%);
+  animation: skillFlow 2.6s ease-in-out infinite;
+  animation-delay: 0.6s;
+  border-radius: inherit;
+}
+
+@keyframes skillFlow {
+  0%,
+  18% {
+    transform: translateX(-120%);
+  }
+  55%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/* 技能详情页进度条同款 */
+.skill-detail-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-detail-bar span {
+  position: relative;
+  overflow: hidden;
+  transform-origin: left center;
+  animation: skillGrow 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--order, 0) * 90ms + 0.1s);
+}
+
+.skill-detail-bar span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 20%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  transform: translateX(-120%);
+  animation: skillFlow 2.6s ease-in-out infinite;
+  animation-delay: 0.5s;
+  border-radius: inherit;
+}
+
+/* 百分比数字过渡质感 */
+.skill-chip-level,
+.skill-detail-level {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 项目卡片 3D 视差（Holo Card 风格） ---- */
+.tilt-card {
+  transform: perspective(900px) rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
+  transform-style: preserve-3d;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+  will-change: transform;
+}
+
+.tilt-card:hover {
+  --lift: -4px;
+  transform: perspective(900px) rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
+}
+
+/* 卡片内的封面做轻微 Z 轴浮动，模拟立体层次 */
+.tilt-card .project-image {
+  transform: translateZ(14px);
+  transform-style: preserve-3d;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tilt-card .project-cover-icon {
+  transform: translateZ(26px);
+  transition: transform 0.26s ease;
+}
+
+.tilt-card:hover .project-cover-icon {
+  transform: translateZ(30px) scale(1.08);
+}
+
+/* 封面流光扫过（全息感） */
+.tilt-card .project-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0) 25%,
+    rgba(255, 255, 255, 0.32) 46%,
+    rgba(255, 255, 255, 0.05) 54%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  transform: translateX(-140%) skewX(-8deg);
+  animation: coverShine 4.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes coverShine {
+  0%,
+  42% {
+    transform: translateX(-140%) skewX(-8deg);
+  }
+  66%,
+  100% {
+    transform: translateX(160%) skewX(-8deg);
+  }
+}
+
+/* 封面叠加一层主题渐变晕染，弱化纯色块的生硬感 */
+.tilt-card .project-image::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 30% 20%,
+      rgba(255, 255, 255, 0.24),
+      rgba(255, 255, 255, 0) 42%
+    ),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.22));
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 粒子在暗色下更亮，卡片封面保持柔和对比 */
+.tilt-card .project-cover-meta,
+.tilt-card .project-cover-year {
+  z-index: 2;
+  position: relative;
+}
+
+/* ---- Shader 风格按钮 ---- */
+.hero-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* 按钮流光扫过 */
+.hero-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -45%;
+  width: 36%;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-16deg);
+  animation: btnShine 3.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes btnShine {
+  0%,
+  52% {
+    left: -45%;
+  }
+  82%,
+  100% {
+    left: 135%;
+  }
+}
+
+/* 按钮内发光描边（hover 时点亮） */
+.hero-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 12px rgba(120, 160, 255, 0),
+    0 0 0 1px rgba(160, 190, 255, 0);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hero-btn:hover::after {
+  opacity: 1;
+}
+
+.hero-btn-secondary::before {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.card-more,
+.project-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-more::before,
+.project-link::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -55%;
+  width: 40%;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-16deg);
+  animation: btnShine 3.8s ease-in-out infinite;
+  animation-delay: 1.2s;
+  pointer-events: none;
+}
+
+/* ---- 减少动效偏好：关闭新增循环动画，卡片恢复静态 ---- */
+@media (prefers-reduced-motion: reduce) {
+  .title-char,
+  .skill-progress,
+  .skill-detail-bar span {
+    animation: none !important;
+  }
+
+  .skill-progress::before,
+  .skill-detail-bar span::after,
+  .tilt-card .project-image::after,
+  .hero-btn::before,
+  .card-more::before,
+  .project-link::before {
+    animation: none !important;
+    display: none;
+  }
+
+  .tilt-card {
+    transition: none;
+    transform: none;
+  }
+
+  .tilt-card .project-image,
+  .tilt-card .project-cover-icon {
+    transform: none;
+  }
+
+  .hero-btn::after,
+  .hero-btn:hover::after {
+    opacity: 0;
   }
 }

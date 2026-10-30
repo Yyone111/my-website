@@ -1,10 +1,53 @@
 import { useEffect, useState } from "react";
 import UiIcon from "../components/UiIcon";
+import useTiltCards from "../hooks/useTiltCards";
 import { HERO_SLOGANS, PROJECTS, SKILLS, STATS, TIMELINE } from "../data";
+
+function useCountUp(target, duration = 900) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    const reduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (reduced) {
+      setValue(target);
+      return () => {};
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(target * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
+function SkillChip({ skill }) {
+  const progress = useCountUp(skill.level);
+  return (
+    <div className="skill-chip">
+      <div className="skill-chip-head">
+        <span className="skill-chip-name">{skill.name}</span>
+        <span className="skill-chip-level">{progress}%</span>
+      </div>
+      <div className="skill-bar">
+        <div
+          className="skill-progress"
+          style={{ width: `${skill.level}%`, "--progress": `${skill.level}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function Home({ onNavigate }) {
   const [typedText, setTypedText] = useState("");
   const [sloganIndex, setSloganIndex] = useState(0);
+  const projectsRef = useTiltCards(true);
 
   // 打字机副标题：克制轮换，尊重 prefers-reduced-motion
   useEffect(() => {
@@ -46,8 +89,23 @@ export default function Home({ onNavigate }) {
   return (
     <div className="page-shell">
       <section className="hero-landing reveal" style={{ "--i": 0 }}>
-        <h1 className="hero-landing-title">
-          Hello, I'm <span className="gradientText">Yy</span>
+        <h1 className="hero-landing-title" aria-label="Hello, I'm Yy">
+          {"Hello, I'm ".split("").map((char, index) => (
+            <span
+              key={`pre-${index}`}
+              className="title-char"
+              style={{ "--char-i": index }}
+              aria-hidden="true"
+            >
+              {char === " " ? "\u00A0" : char}
+            </span>
+          ))}
+          <span className="gradientText title-char" style={{ "--char-i": 10 }}>
+            Y
+          </span>
+          <span className="title-char" style={{ "--char-i": 11 }}>
+            y
+          </span>
         </h1>
         <p className="hero-landing-subtitle typewriter-line">
           <span className={HERO_SLOGANS[sloganIndex].accent}>{typedText}</span>
@@ -131,18 +189,7 @@ export default function Home({ onNavigate }) {
           </header>
           <div className="skills-compact">
             {SKILLS.map((skill) => (
-              <div className="skill-chip" key={skill.name}>
-                <div className="skill-chip-head">
-                  <span className="skill-chip-name">{skill.name}</span>
-                  <span className="skill-chip-level">{skill.level}%</span>
-                </div>
-                <div className="skill-bar">
-                  <div
-                    className="skill-progress"
-                    style={{ width: `${skill.level}%` }}
-                  />
-                </div>
-              </div>
+              <SkillChip key={skill.name} skill={skill} />
             ))}
           </div>
         </section>
@@ -165,18 +212,18 @@ export default function Home({ onNavigate }) {
             全部作品 <UiIcon name="arrow" className="card-more-icon" />
           </button>
         </header>
-        <div className="projects-grid">
+        <div className="projects-grid" ref={projectsRef}>
           {PROJECTS.slice(0, 3).map((project) => (
             <a
               key={project.key}
-              className="project-card"
+              className="project-card tilt-card"
               href={project.href || "#/projects"}
               aria-label={project.title}
             >
               <div
                 className="project-image"
                 role="presentation"
-                style={{ background: project.tone }}
+                style={{ background: project.tone, "--tone": project.tone }}
               >
                 <span className="project-cover-icon">
                   <UiIcon name={project.icon} />
