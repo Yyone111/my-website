@@ -89,6 +89,10 @@ export default function Home({ onNavigate }) {
   return (
     <div className="page-shell">
       <section className="hero-landing reveal" style={{ "--i": 0 }}>
+        <p className="hero-kicker">
+          <span className="hero-kicker-dot" />
+          全栈开发者 · 个人主页
+        </p>
         <h1 className="hero-landing-title" aria-label="Hello, I'm Yy">
           {"Hello, I'm ".split("").map((char, index) => (
             <span

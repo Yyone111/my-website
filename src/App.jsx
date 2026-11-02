@@ -107,13 +107,13 @@ function App() {
       }
       pendingRouteRef.current = null;
       setVeilPhase("out");
-    }, 420);
+    }, 260);
     return () => clearTimeout(timer);
   }, [veilPhase, route]);
 
   useEffect(() => {
     if (veilPhase !== "out") return;
-    const timer = setTimeout(() => setVeilPhase("idle"), 620);
+    const timer = setTimeout(() => setVeilPhase("idle"), 460);
     return () => clearTimeout(timer);
   }, [veilPhase]);
 
@@ -434,9 +434,7 @@ function App() {
         }`}
         aria-hidden="true"
       >
-        <span className="veil-panel" />
-        <span className="veil-panel" />
-        <span className="veil-panel" />
+        <span className="veil-mist" />
         <span className="veil-label">
           {pendingLabel || labelForRoute(route)}
         </span>
