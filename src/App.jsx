@@ -14,6 +14,8 @@ import Home from "./pages/Home";
 import Projects from "./pages/Projects";
 import Skills from "./pages/Skills";
 import About from "./pages/About";
+import TravelMap from "./pages/TravelMap";
+import TravelAdmin from "./pages/TravelAdmin";
 import Contact from "./pages/Contact";
 
 const DEFAULT_ROUTE = "home";
@@ -370,6 +372,10 @@ function App() {
         return <Skills />;
       case "about":
         return <About onNavigate={navigate} />;
+      case "travel":
+        return <TravelMap onNavigate={navigate} />;
+      case "travel-admin":
+        return <TravelAdmin />;
       case "contact":
         return <Contact onOpenQQ={() => setIsModalOpen(true)} />;
       default:
@@ -409,7 +415,7 @@ function App() {
           </button>
 
           <div className="icomat-nav-links">
-            {NAV_ITEMS.map((item) => (
+            {NAV_ITEMS.filter((item) => !item.hidden).map((item) => (
               <button
                 key={item.key}
                 type="button"

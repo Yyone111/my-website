@@ -5568,3 +5568,1617 @@ body.dark-mode .hero-btn-secondary,
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   首页时光相册：瀑布流照片墙 + 滚动入场
+   ========================================================================== */
+
+.photo-wall-section {
+  margin-top: 56px;
+}
+
+.photo-wall-head {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.photo-wall-title {
+  margin: 0 0 8px;
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.photo-wall-sub {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #6a7a92;
+}
+
+/* ---- 晾衣绳：一条绳横拉过去，照片用夹子挂在绳上 ---- */
+.photo-line {
+  --gap: 34px;
+  --rope: #c9b393;
+  /* 绳子在两个夹子之间下垂的幅度 */
+  --sag: 16px;
+  position: relative;
+  /* 左右各留半个间距，让首尾绳段正好收到容器边缘 */
+  padding: 46px calc(var(--gap) / 2) 0;
+  /* 照片带静止倾角，入场时又会左右摆动，外接框会略微超出容器宽度；
+     这里只在水平方向裁剪，避免页面出现横向滚动条与右侧空白条 */
+  overflow-x: clip;
+}
+
+.line-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  column-gap: var(--gap);
+  row-gap: 88px;
+  align-items: start;
+}
+
+/* 每张照片：入场时从绳子上方转下来「挂上」，静止后带一点自然倾角 */
+.line-photo {
+  --in-y: -24px;
+  --in-o: 0;
+  --in-b: 6px;
+  --sw: -7deg;
+  position: relative;
+  margin: 0;
+  padding-top: 22px;
+  opacity: var(--in-o);
+  filter: blur(var(--in-b));
+  transform: translateY(var(--in-y));
+  transition:
+    opacity 0.62s ease,
+    filter 0.62s ease,
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
+}
+
+.line-photo.is-hung {
+  --in-y: 0px;
+  --in-o: 1;
+  --in-b: 0px;
+  --sw: 0deg;
+}
+
+/* 绳段：以每张照片为一段。两端落在相邻两个夹子的中间（最低点），
+   段中间（夹子处）最高 —— 多段首尾相接，就是一条带下垂弧度的晾衣绳。
+   反向抵消下落位移，让绳在照片入场时保持不动。 */
+.line-rope {
+  position: absolute;
+  top: calc(var(--in-y, 0px) * -1);
+  left: calc(var(--gap) / -2);
+  width: calc(100% + var(--gap));
+  height: var(--sag, 13px);
+  pointer-events: none;
+  /* 滤镜放在 svg 上（按 CSS 像素计算），不要放在 path 上（会被拉伸变形） */
+  filter: drop-shadow(0 1px 1.5px rgba(48, 38, 20, 0.24));
+}
+
+/* 绳子渐变（共享 defs，不占布局） */
+.line-rope-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.line-rope-c0 {
+  stop-color: #f1e3ca;
+}
+
+.line-rope-c1 {
+  stop-color: var(--rope);
+}
+
+.line-rope-c2 {
+  stop-color: #a2865f;
+}
+
+.line-rope-path {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  /* 绳段会被横向拉伸，用非缩放描边保证粗细始终是 3px */
+  vector-effect: non-scaling-stroke;
+}
+
+/* 木夹子：绕绳上的接触点一起摆动 */
+.line-peg {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  width: 15px;
+  height: 34px;
+  margin-left: -7.5px;
+  border-radius: 3px 3px 2px 2px;
+  background: linear-gradient(180deg, #eed39a, #caa05e 52%, #b1813c);
+  box-shadow:
+    0 2px 5px rgba(40, 28, 8, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  z-index: 2;
+  transform-origin: 50% 16px;
+  transform: rotate(calc(var(--tilt, 0deg) + var(--sw, 0deg)));
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.line-peg::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  /* 与绳子最高点对齐（绳子顶部在夹子局部坐标 16px 处） */
+  top: 15px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(92, 63, 20, 0.42);
+}
+
+/* ---- 相纸 ---- */
+.line-frame {
+  margin: 0;
+  padding: 9px 9px 0;
+  background: #fff;
+  border-radius: 5px;
+  box-shadow:
+    0 10px 26px rgba(31, 58, 96, 0.16),
+    0 2px 5px rgba(31, 58, 96, 0.08);
+  /* 旋转中心落在绳子上，照片像钟摆一样转下来 */
+  transform-origin: 50% -22px;
+  transform: translateY(0) rotate(calc(var(--tilt, 0deg) + var(--sw, 0deg)));
+  transition:
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease;
+}
+
+.line-photo:hover .line-frame {
+  transform: translateY(-4px) rotate(calc(var(--tilt, 0deg) + var(--sw, 0deg)));
+  box-shadow:
+    0 18px 40px rgba(31, 58, 96, 0.22),
+    0 3px 8px rgba(31, 58, 96, 0.1);
+}
+
+.line-shot {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2px;
+  aspect-ratio: 4 / 3;
+  /* 底色即占位渐变：有真实照片时被 img 覆盖，加载中也不会露白 */
+  background: linear-gradient(
+    140deg,
+    var(--tone-a, #d6e2f2),
+    var(--tone-b, #c2d3e8)
+  );
+}
+
+.line-shot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.line-photo:hover .line-shot img {
+  transform: scale(1.05);
+}
+
+/* 暂无真实照片时的占位：柔光晕 + 相机水印 */
+.line-hold {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.line-hold::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 28% 22%,
+      rgba(255, 255, 255, 0.4),
+      rgba(255, 255, 255, 0) 55%
+    ),
+    linear-gradient(200deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+.line-hold-icon {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.4;
+  color: rgba(255, 255, 255, 0.66);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
+}
+
+/* ---- 相纸下沿的说明 ---- */
+.line-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 2px 12px;
+}
+
+.line-caption {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #46566e;
+}
+
+.line-year {
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  color: #93a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 暗色模式 ---- */
+body.dark-mode .photo-line,
+[data-theme="dark"] .photo-line {
+  --rope: #6d6252;
+}
+
+body.dark-mode .line-rope-c0,
+[data-theme="dark"] .line-rope-c0 {
+  stop-color: #8c8171;
+}
+
+body.dark-mode .line-rope-c2,
+[data-theme="dark"] .line-rope-c2 {
+  stop-color: #443c31;
+}
+
+body.dark-mode .line-frame,
+[data-theme="dark"] .line-frame {
+  background: #1b2536;
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.4),
+    0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .line-photo:hover .line-frame,
+[data-theme="dark"] .line-photo:hover .line-frame {
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.5),
+    0 3px 8px rgba(0, 0, 0, 0.34);
+}
+
+body.dark-mode .line-caption,
+[data-theme="dark"] .line-caption {
+  color: #c2d0e2;
+}
+
+body.dark-mode .line-year,
+[data-theme="dark"] .line-year {
+  color: #8598b0;
+}
+
+body.dark-mode .photo-wall-sub,
+[data-theme="dark"] .photo-wall-sub {
+  color: #9cb0ca;
+}
+
+body.dark-mode .line-hold::before,
+[data-theme="dark"] .line-hold::before {
+  background:
+    radial-gradient(
+      circle at 28% 22%,
+      rgba(255, 255, 255, 0.22),
+      rgba(255, 255, 255, 0) 55%
+    ),
+    linear-gradient(200deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.34) 100%);
+}
+
+/* ---- 响应式：收窄间距与列宽 ---- */
+@media (max-width: 1024px) {
+  .photo-line {
+    --gap: 24px;
+    --sag: 14px;
+  }
+
+  .line-track {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    row-gap: 74px;
+  }
+}
+
+@media (max-width: 640px) {
+  .photo-line {
+    --gap: 20px;
+    --sag: 11px;
+    padding-top: 38px;
+  }
+
+  .line-track {
+    grid-template-columns: 1fr;
+    row-gap: 62px;
+  }
+}
+
+/* ---- 减少动效偏好：照片直接挂好，不做入场 ---- */
+@media (prefers-reduced-motion: reduce) {
+  .line-photo,
+  .line-photo.is-hung {
+    --in-y: 0px;
+    --in-o: 1;
+    --in-b: 0px;
+    --sw: 0deg;
+    transition: none !important;
+  }
+
+  .line-frame,
+  .line-peg {
+    transition: none !important;
+  }
+
+  .line-shot img,
+  .line-photo:hover .line-shot img {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---- 窄屏纵向排列：让左右两栏真正撑满容器，消除右侧留白 ----
+   原因：.yy-main 是 column 弹性容器且 align-items: flex-start，
+   而 .yy-right 被设为 width: auto，会按内容收缩（fit-content），
+   于是容器右侧空出一大块。这里强制两栏占满整行。 */
+@media (max-width: 840px) {
+  .yy-main {
+    align-items: stretch !important;
+  }
+
+  .yy-left,
+  .yy-right {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    align-self: stretch !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+/* ==========================================================================
+   旅行地图
+   —— 左侧照片拼贴中国地图 + 足迹统计，右侧最新足迹大图卡 + 最近足迹列表
+   ========================================================================== */
+.tm-page {
+  --tm-ink: #26313f;
+  --tm-ink-soft: #5b6472;
+  --tm-ink-faint: #93a3b8;
+  --tm-surface: #ffffff;
+  --tm-surface-soft: #f6faf2;
+  --tm-line: #e4ecdf;
+  --tm-green: #7bbf52;
+  --tm-green-deep: #6da93b;
+}
+
+/* ---- 标题区 ---- */
+.tm-head {
+  padding: 10px 4px 0;
+}
+
+.tm-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8aa3c0;
+}
+
+.tm-title {
+  margin: 8px 0;
+  font-family: "Times New Roman", Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(28px, 3.4vw, 42px);
+  line-height: 1.15;
+  color: #16181d;
+}
+
+.tm-sub {
+  margin: 0;
+  max-width: 660px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--tm-ink-soft);
+}
+
+/* ---- 两栏：地图为主，右栏只放信息卡，宽度收窄避免抢戏 ---- */
+.tm-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(228px, 0.55fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.tm-map-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tm-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* ---- 地图 ---- */
+.tm-map-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 660px;
+  margin: 0 auto;
+}
+
+.tm-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* 陆地整体轻微抬离背景，避免和页面底色糊在一起 */
+.tm-lands {
+  filter: drop-shadow(0 6px 12px rgba(43, 95, 55, 0.14));
+}
+
+.tm-prov {
+  stroke: #d2e2c8;
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    stroke 0.28s ease,
+    stroke-width 0.28s ease,
+    filter 0.28s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.tm-prov.is-visited {
+  stroke: rgba(109, 169, 59, 0.5);
+}
+
+.tm-prov.is-wish {
+  fill: #edf7e4;
+  stroke: #a5d47c;
+}
+
+.tm-prov.is-todo {
+  fill: #f4f7f1;
+  stroke: #dde5d7;
+}
+
+.tm-prov.is-hover {
+  transform: translateY(-6px);
+  filter: drop-shadow(0 8px 12px rgba(43, 95, 55, 0.3));
+  stroke: var(--tm-green-deep);
+  stroke-width: 1.6;
+}
+
+/* ---- 地图加载中 / 失败 ---- */
+.tm-map-skeleton {
+  width: 100%;
+  aspect-ratio: 1000 / 841;
+  border-radius: 16px;
+  background: linear-gradient(100deg, #f3f7ef 30%, #eaf3e5 50%, #f3f7ef 70%);
+  background-size: 220% 100%;
+  animation: tmSkeleton 1.7s ease-in-out infinite;
+}
+
+@keyframes tmSkeleton {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}
+
+.tm-map-fallback {
+  margin: 0;
+  padding: 72px 20px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--tm-ink-faint);
+}
+
+/* ---- 南海诸岛小图：钉在地图右下角的空白海面上，位置在台湾以南，不会压住陆地 ---- */
+.tm-nanhai {
+  position: absolute;
+  right: 0.5%;
+  bottom: 0;
+  width: 52px;
+  margin: 0;
+  padding: 4px 4px 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--tm-line);
+  box-shadow: 0 6px 16px rgba(43, 95, 155, 0.1);
+}
+
+.tm-nanhai svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.tm-nanhai path {
+  fill: none;
+  stroke: #8fbf6a;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.tm-nanhai figcaption {
+  margin-top: 2px;
+  text-align: center;
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  color: var(--tm-ink-faint);
+}
+
+/* ---- 悬停标签 ---- */
+.tm-tip {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(31, 41, 55, 0.9);
+  color: #fff;
+  font-size: 11.5px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -150%);
+}
+
+.tm-tip em {
+  font-style: normal;
+  font-size: 10.5px;
+  opacity: 0.7;
+}
+
+/* ---- 足迹统计（叠在地图左下角的空白海面上） ---- */
+.tm-stats {
+  position: absolute;
+  left: 2%;
+  bottom: 3%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 218px;
+  margin: 0;
+  padding: 13px 15px;
+  list-style: none;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.93);
+  border: 1px solid var(--tm-line);
+  box-shadow: 0 12px 28px rgba(43, 95, 155, 0.12);
+  backdrop-filter: blur(6px);
+}
+
+.tm-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--tm-ink-soft);
+}
+
+.tm-stat strong {
+  margin-left: auto;
+  font-size: 14.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--tm-ink);
+}
+
+.tm-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tm-stat.is-visited .tm-dot {
+  background: linear-gradient(135deg, #a9d68b, #6da93b);
+}
+
+.tm-stat.is-wish .tm-dot {
+  background: #edf7e4;
+  box-shadow: inset 0 0 0 2px #a5d47c;
+}
+
+.tm-stat.is-todo .tm-dot {
+  background: #f4f7f1;
+  box-shadow: inset 0 0 0 1.5px #dde5d7;
+}
+
+/* ---- 最新足迹大图卡 ---- */
+.tm-latest {
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--tm-surface);
+  border: 1px solid var(--tm-line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 12px 30px rgba(43, 95, 155, 0.08);
+}
+
+/* ---- 最新足迹大图卡：右栏收窄后图别太高，避免抢走地图的注意力 ---- */
+.tm-latest-shot {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(
+    150deg,
+    var(--tone-a, #d6e2f2),
+    var(--tone-b, #c2d3e8)
+  );
+}
+
+.tm-latest-shot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tm-shot-hold {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tm-shot-hold::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 30% 24%,
+      rgba(255, 255, 255, 0.46),
+      rgba(255, 255, 255, 0) 58%
+    ),
+    linear-gradient(200deg, rgba(0, 0, 0, 0) 46%, rgba(0, 0, 0, 0.16) 100%);
+}
+
+.tm-shot-icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  stroke-width: 1.4;
+  color: rgba(255, 255, 255, 0.72);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
+}
+
+.tm-latest-body {
+  padding: 14px 16px 16px;
+}
+
+.tm-latest-body h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--tm-ink);
+}
+
+.tm-latest-pin {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--tm-green-deep);
+}
+
+.tm-date {
+  margin: 5px 0 0;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: var(--tm-ink-faint);
+}
+
+.tm-note {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px dashed var(--tm-line);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--tm-ink-soft);
+}
+
+/* ---- 最近足迹列表 ---- */
+.tm-recent {
+  padding: 14px 16px 6px;
+  border-radius: 18px;
+  background: var(--tm-surface);
+  border: 1px solid var(--tm-line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 12px 30px rgba(43, 95, 155, 0.08);
+}
+
+.tm-recent-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.tm-recent-head h4 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--tm-ink);
+}
+
+.tm-recent-more {
+  font-size: 11.5px;
+  color: var(--tm-ink-faint);
+}
+
+.tm-recent-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tm-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 0;
+  border-top: 1px solid #f1f5ee;
+}
+
+.tm-recent-item:first-child {
+  border-top: none;
+}
+
+.tm-thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(
+    140deg,
+    var(--tone-a, #d6e2f2),
+    var(--tone-b, #c2d3e8)
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+
+.tm-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tm-recent-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tm-recent-text strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3a4757;
+}
+
+.tm-recent-text em {
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: #9aa8ba;
+}
+
+/* ---- 响应式 ---- */
+@media (max-width: 1180px) {
+  .tm-grid {
+    grid-template-columns: minmax(0, 1.3fr) minmax(210px, 0.5fr);
+    gap: 14px;
+  }
+}
+
+/* 单栏：右侧两张卡并排，避免页面被拉得过长 */
+@media (max-width: 940px) {
+  .tm-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tm-side {
+    flex-direction: row;
+    align-items: start;
+  }
+
+  .tm-side > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+/* 窄屏：统计卡不再叠在地图上，改为地图下方常规排布 */
+@media (max-width: 720px) {
+  .tm-side {
+    flex-direction: column;
+  }
+
+  .tm-stats {
+    position: static;
+    width: 100%;
+    max-width: 660px;
+    margin: 12px auto 0;
+  }
+
+  .tm-nanhai {
+    right: 0;
+    bottom: 0;
+    width: 46px;
+  }
+}
+
+/* ---- 暗色模式 ---- */
+body.dark-mode .tm-page,
+[data-theme="dark"] .tm-page {
+  --tm-ink: #e3ebf4;
+  --tm-ink-soft: #9db0c6;
+  --tm-ink-faint: #7d8fa6;
+  --tm-surface: rgba(20, 29, 42, 0.9);
+  --tm-surface-soft: rgba(20, 29, 42, 0.7);
+  --tm-line: rgba(120, 150, 190, 0.2);
+}
+
+body.dark-mode .tm-title,
+[data-theme="dark"] .tm-title {
+  color: #eef3f9;
+}
+
+body.dark-mode .tm-prov.is-wish,
+[data-theme="dark"] .tm-prov.is-wish {
+  fill: rgba(123, 191, 82, 0.16);
+  stroke: #5f8f45;
+}
+
+body.dark-mode .tm-prov.is-todo,
+[data-theme="dark"] .tm-prov.is-todo {
+  fill: rgba(255, 255, 255, 0.06);
+  stroke: rgba(255, 255, 255, 0.14);
+}
+
+body.dark-mode .tm-latest-shot,
+[data-theme="dark"] .tm-latest-shot,
+body.dark-mode .tm-thumb,
+[data-theme="dark"] .tm-thumb {
+  filter: brightness(0.78) saturate(0.85);
+}
+
+body.dark-mode .tm-stats,
+[data-theme="dark"] .tm-stats {
+  background: rgba(20, 29, 42, 0.9);
+}
+
+body.dark-mode .tm-nanhai,
+[data-theme="dark"] .tm-nanhai {
+  background: rgba(20, 29, 42, 0.9);
+}
+
+body.dark-mode .tm-recent-item,
+[data-theme="dark"] .tm-recent-item {
+  border-top-color: rgba(120, 150, 190, 0.14);
+}
+
+body.dark-mode .tm-recent-text strong,
+[data-theme="dark"] .tm-recent-text strong {
+  color: #c6d4e4;
+}
+
+body.dark-mode .tm-map-skeleton,
+[data-theme="dark"] .tm-map-skeleton {
+  background: linear-gradient(100deg, #16202e 30%, #1d2a3b 50%, #16202e 70%);
+  background-size: 220% 100%;
+}
+
+/* ---- 减少动效偏好 ---- */
+@media (prefers-reduced-motion: reduce) {
+  .tm-prov,
+  .tm-prov.is-hover {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .tm-map-skeleton {
+    animation: none !important;
+  }
+}
+
+/* ---- 底部照片管理入口：靠左排，避开右下角的 AI 浮窗 ---- */
+.tm-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 4px 0;
+  font-size: 12px;
+  color: var(--tm-ink-faint);
+}
+
+.tm-admin-entry {
+  flex: none;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--tm-line);
+  background: var(--tm-surface);
+  font-size: 12px;
+  color: var(--tm-ink-soft);
+  cursor: pointer;
+  transition:
+    border-color 0.24s ease,
+    color 0.24s ease,
+    transform 0.24s ease;
+}
+
+.tm-admin-entry:hover {
+  border-color: var(--tm-green);
+  color: var(--tm-green-deep);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   旅行照片管理页
+   —— 密码门 + 省份/大图卡/缩略图的照片配置
+   ========================================================================== */
+.ta-page {
+  --ta-ink: #26313f;
+  --ta-ink-soft: #5b6472;
+  --ta-ink-faint: #93a3b8;
+  --ta-surface: #ffffff;
+  --ta-line: #e4ecdf;
+  --ta-green: #7bbf52;
+  --ta-green-deep: #6da93b;
+}
+
+.ta-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 4px 0;
+}
+
+.ta-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8aa3c0;
+}
+
+.ta-title {
+  margin: 8px 0;
+  font-family: "Times New Roman", Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(24px, 2.8vw, 34px);
+  line-height: 1.15;
+  color: #16181d;
+}
+
+.ta-sub {
+  margin: 0;
+  max-width: 560px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ta-ink-soft);
+}
+
+/* ---- 按钮 ---- */
+.ta-btn {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--ta-line);
+  background: var(--ta-surface);
+  font-size: 13px;
+  color: var(--ta-ink-soft);
+  cursor: pointer;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    color 0.22s ease;
+}
+
+.ta-btn:hover:not(:disabled) {
+  border-color: var(--ta-green);
+  color: var(--ta-green-deep);
+}
+
+.ta-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ta-btn.is-primary {
+  background: linear-gradient(135deg, #8ccb5f, var(--ta-green-deep));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+.ta-btn.is-primary:hover:not(:disabled) {
+  color: #fff;
+  filter: brightness(1.04);
+}
+
+.ta-btn.is-ghost {
+  background: transparent;
+}
+
+.ta-btn.is-danger {
+  border-color: rgba(214, 106, 106, 0.4);
+  color: #c25b5b;
+}
+
+.ta-btn.is-danger:hover:not(:disabled) {
+  border-color: #c25b5b;
+  color: #b04a4a;
+}
+
+/* ---- 密码门 ---- */
+.ta-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 62vh;
+  padding: 20px 0;
+}
+
+.ta-gate-card {
+  width: min(100%, 380px);
+  padding: 28px 26px 22px;
+  border-radius: 18px;
+  text-align: center;
+  background: var(--ta-surface);
+  border: 1px solid var(--ta-line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 14px 34px rgba(43, 95, 155, 0.1);
+}
+
+.ta-gate-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eaf6dd, #d3ecc0);
+  color: var(--ta-green-deep);
+}
+
+.ta-gate-card h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ta-ink);
+}
+
+.ta-gate-card > p {
+  margin: 8px 0 18px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ta-ink-soft);
+}
+
+.ta-gate-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ta-gate-input {
+  text-align: center;
+  letter-spacing: 0.18em;
+}
+
+.ta-gate-btn {
+  width: 100%;
+}
+
+.ta-gate-foot {
+  margin: 16px 0 0 !important;
+  font-size: 11px !important;
+  line-height: 1.6 !important;
+  color: var(--ta-ink-faint) !important;
+}
+
+/* ---- 输入控件 ---- */
+.ta-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ta-line);
+  background: #fbfdf8;
+  font-size: 13px;
+  color: var(--ta-ink);
+  outline: none;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.ta-input::placeholder {
+  color: #a9b7c6;
+}
+
+.ta-input:focus {
+  border-color: var(--ta-green);
+  box-shadow: 0 0 0 3px rgba(123, 191, 82, 0.16);
+}
+
+.ta-file {
+  display: none;
+}
+
+.ta-error {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #c25b5b;
+}
+
+.ta-save-error {
+  margin: 0 4px;
+}
+
+.ta-hint {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ta-ink-faint);
+}
+
+.ta-tag-note {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: var(--ta-green-deep);
+}
+
+/* ---- 标签页 ---- */
+.ta-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 4px;
+}
+
+.ta-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 15px;
+  border-radius: 999px;
+  border: 1px solid var(--ta-line);
+  background: var(--ta-surface);
+  font-size: 13px;
+  color: var(--ta-ink-soft);
+  cursor: pointer;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    color 0.22s ease;
+}
+
+.ta-tab:hover {
+  border-color: var(--ta-green);
+  color: var(--ta-green-deep);
+}
+
+.ta-tab.is-active {
+  background: linear-gradient(135deg, #8ccb5f, var(--ta-green-deep));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+.ta-tab-count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ta-tab.is-active .ta-tab-count {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* ---- 面板 ---- */
+.ta-panel {
+  padding: 18px 18px 20px;
+  border-radius: 16px;
+  background: var(--ta-surface);
+  border: 1px solid var(--ta-line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 12px 30px rgba(43, 95, 155, 0.07);
+}
+
+/* ---- 省份选择 ---- */
+.ta-prov-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ta-prov {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 8px;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid var(--ta-line);
+  background: #fbfdf8;
+  font-size: 12.5px;
+  color: var(--ta-ink-soft);
+  cursor: pointer;
+  transition:
+    border-color 0.22s ease,
+    color 0.22s ease;
+}
+
+.ta-prov img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.42;
+}
+
+.ta-prov span {
+  position: relative;
+}
+
+.ta-prov.has-photo {
+  color: #1f3d17;
+  border-color: rgba(109, 169, 59, 0.45);
+}
+
+.ta-prov.has-photo span {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.ta-prov.is-active {
+  border-color: var(--ta-green-deep);
+  box-shadow: 0 0 0 3px rgba(123, 191, 82, 0.18);
+  color: var(--ta-ink);
+}
+
+/* ---- 照片字段 ---- */
+.ta-field {
+  padding: 14px;
+  border-radius: 12px;
+  background: #f9fcf6;
+  border: 1px dashed var(--ta-line);
+}
+
+.ta-field-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.ta-preview {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 112px;
+  height: 84px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(140deg, #eef6e6, #dcecd0);
+  border: 1px solid var(--ta-line);
+}
+
+.ta-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ta-preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ta-ink-faint);
+}
+
+.ta-preview-empty svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ta-field-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ta-field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---- 已有图片库 ---- */
+.ta-library {
+  margin-top: 16px;
+}
+
+.ta-library-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ta-ink-faint);
+}
+
+.ta-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ta-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 92px;
+  padding: 5px;
+  border-radius: 10px;
+  border: 1px solid var(--ta-line);
+  background: var(--ta-surface);
+  cursor: pointer;
+  transition:
+    border-color 0.22s ease,
+    transform 0.22s ease;
+}
+
+.ta-chip:hover {
+  border-color: var(--ta-green);
+  transform: translateY(-1px);
+}
+
+.ta-chip.is-active {
+  border-color: var(--ta-green-deep);
+  box-shadow: 0 0 0 3px rgba(123, 191, 82, 0.16);
+}
+
+.ta-chip img {
+  width: 100%;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 7px;
+}
+
+.ta-chip span {
+  overflow: hidden;
+  font-size: 10.5px;
+  line-height: 1.4;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ta-ink-soft);
+}
+
+/* ---- 最近足迹配置行 ---- */
+.ta-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ta-recent-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--ta-line);
+  background: #fbfdf8;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.ta-recent-row.is-active {
+  border-color: var(--ta-green-deep);
+  box-shadow: 0 0 0 3px rgba(123, 191, 82, 0.16);
+}
+
+.ta-recent-thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: linear-gradient(
+    140deg,
+    var(--tone-a, #d6e2f2),
+    var(--tone-b, #c2d3e8)
+  );
+}
+
+.ta-recent-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ta-recent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ta-recent-info strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ta-ink);
+}
+
+.ta-recent-info em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--ta-ink-faint);
+}
+
+.ta-recent-state {
+  margin-left: auto;
+  flex: none;
+  font-size: 11.5px;
+  color: var(--ta-ink-faint);
+}
+
+/* ---- 底部 ---- */
+.ta-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 4px 0;
+  font-size: 12px;
+  color: var(--ta-ink-faint);
+}
+
+.ta-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  z-index: 1200;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: rgba(31, 41, 55, 0.9);
+  font-size: 12.5px;
+  color: #fff;
+  transform: translateX(-50%);
+  animation: taToastIn 0.28s ease both;
+}
+
+@keyframes taToastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* ---- 响应式 ---- */
+@media (max-width: 720px) {
+  .ta-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ta-field-row {
+    flex-direction: column;
+  }
+
+  .ta-preview {
+    width: 100%;
+    height: 132px;
+  }
+
+  .ta-foot {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ---- 暗色模式 ---- */
+body.dark-mode .ta-page,
+[data-theme="dark"] .ta-page {
+  --ta-ink: #e3ebf4;
+  --ta-ink-soft: #9db0c6;
+  --ta-ink-faint: #7d8fa6;
+  --ta-surface: rgba(20, 29, 42, 0.9);
+  --ta-line: rgba(120, 150, 190, 0.2);
+}
+
+body.dark-mode .ta-title,
+[data-theme="dark"] .ta-title {
+  color: #eef3f9;
+}
+
+body.dark-mode .ta-input,
+[data-theme="dark"] .ta-input,
+body.dark-mode .ta-field,
+[data-theme="dark"] .ta-field,
+body.dark-mode .ta-prov,
+[data-theme="dark"] .ta-prov,
+body.dark-mode .ta-recent-row,
+[data-theme="dark"] .ta-recent-row {
+  background: rgba(12, 19, 30, 0.6);
+}
+
+body.dark-mode .ta-prov.has-photo,
+[data-theme="dark"] .ta-prov.has-photo {
+  color: #dbead3;
+}
+
+body.dark-mode .ta-prov.has-photo span,
+[data-theme="dark"] .ta-prov.has-photo span {
+  background: rgba(12, 19, 30, 0.78);
+}
+
+body.dark-mode .ta-preview,
+[data-theme="dark"] .ta-preview {
+  background: linear-gradient(140deg, #1a2634, #16202c);
+}
+
+body.dark-mode .ta-gate-icon,
+[data-theme="dark"] .ta-gate-icon {
+  background: linear-gradient(135deg, #22331c, #2c4423);
+}

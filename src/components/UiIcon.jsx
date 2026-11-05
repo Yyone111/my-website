@@ -1,5 +1,7 @@
 const PATHS = {
-  spark: <path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z" />,
+  spark: (
+    <path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z" />
+  ),
   code: <path d="M9 8L5 12l4 4M15 8l4 4-4 4M13 6l-2 12" />,
   pin: (
     <path d="M12 21s6-5.1 6-10a6 6 0 10-12 0c0 4.9 6 10 6 10zM12 13a2 2 0 100-4 2 2 0 000 4z" />
@@ -20,6 +22,9 @@ const PATHS = {
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
   layers: <path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5" />,
   filter: <path d="M4 5h16M7 12h10M10 19h4" />,
+  camera: (
+    <path d="M4 8h3l1.5-2h7L17 8h3v11H4zM12 16a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4z" />
+  ),
 };
 
 function UiIcon({ name, className = "ui-icon" }) {

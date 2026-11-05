@@ -8,7 +8,16 @@ export const NAV_ITEMS = [
   { key: "projects", label: "作品", index: "01", hash: "#/projects" },
   { key: "skills", label: "技能", index: "02", hash: "#/skills" },
   { key: "about", label: "关于", index: "03", hash: "#/about" },
-  { key: "contact", label: "联系", index: "04", hash: "#/contact" },
+  { key: "travel", label: "旅行地图", index: "04", hash: "#/travel" },
+  { key: "contact", label: "联系", index: "05", hash: "#/contact" },
+  // hidden: 只注册路由、不出现在导航里；从旅行地图页底部入口进入
+  {
+    key: "travel-admin",
+    label: "照片管理",
+    index: "06",
+    hash: "#/travel-admin",
+    hidden: true,
+  },
 ];
 
 export const TAGS = ["Elden Ring", "Valorant", "CS2", "Life", "Travel"];
@@ -222,6 +231,55 @@ export const HERO_SLOGANS = [
   { text: "全栈开发 · 热爱设计与交互", accent: "gradientText" },
 ];
 
+// 首页时光相册照片墙（瀑布流）
+// 现在用 tone 渐变做占位；换成真实照片时，给对应条目加上 src 即可（会自动优先用图片）：
+//   { id: 1, src: "/static/img/gallery/iceland.jpg", caption: "冰岛 · 黑沙滩", year: "2026" }
+// 照片放到 public/static/img/gallery/ 下，路径写 /static/img/gallery/xxx.jpg
+export const GALLERY = [
+  {
+    id: 1,
+    caption: "冰岛 · 黑沙滩",
+    year: "2026",
+    tone: ["#2f3a4a", "#5f748c"],
+  },
+  {
+    id: 2,
+    caption: "挪威 · 森林晨雾",
+    year: "2026",
+    tone: ["#2f6b57", "#82b89d"],
+  },
+  { id: 3, caption: "城市夜景", year: "2025", tone: ["#2b2f6b", "#7b6fd0"] },
+  { id: 4, caption: "沙漠 · 黄昏", year: "2025", tone: ["#b07a3f", "#e3bd82"] },
+  {
+    id: 5,
+    caption: "阿尔卑斯 · 湖泊",
+    year: "2025",
+    tone: ["#2f6f9a", "#93c6e2"],
+  },
+  { id: 6, caption: "京都 · 秋色", year: "2024", tone: ["#a8512f", "#e2a463"] },
+  { id: 7, caption: "海边 · 落日", year: "2024", tone: ["#c2593f", "#f0ab7c"] },
+  { id: 8, caption: "星空露营", year: "2024", tone: ["#1f2a4a", "#53619e"] },
+  { id: 9, caption: "春日 · 樱", year: "2023", tone: ["#c56a8f", "#f2bcd0"] },
+  {
+    id: 10,
+    caption: "沿途 · 海线",
+    year: "2023",
+    tone: ["#2f7f8f", "#93d2da"],
+  },
+  {
+    id: 11,
+    caption: "东京 · 涩谷",
+    year: "2023",
+    tone: ["#5a2f6b", "#b781d3"],
+  },
+  {
+    id: 12,
+    caption: "卡帕多奇亚 · 日出",
+    year: "2022",
+    tone: ["#d08a4a", "#f2cda0"],
+  },
+];
+
 // 联系页卡片
 export const CONTACT_CARDS = [
   {
@@ -256,5 +314,114 @@ export const CONTACT_CARDS = [
     value: "工作日 10:00 - 22:00",
     desc: "其它时间消息可能延迟处理，看到会回。",
     icon: "clock",
+  },
+];
+
+/* ===== 旅行地图 ===== */
+
+// 地图按省份状态上色，只改下面两个名单即可：
+//   visited 去过   → 渐变（或真实照片）拼贴填充
+//   wish    想去   → 描边高亮
+//   两个名单之外的省级行政区一律算「还没去」，所以三个数字永远和地图对得上。
+export const TRAVEL_PROVINCE_STATUS = {
+  visited: [
+    "北京",
+    "辽宁",
+    "山西",
+    "河北",
+    "上海",
+    "江苏",
+    "浙江",
+    "安徽",
+    "福建",
+    "江西",
+    "山东",
+    "河南",
+    "湖北",
+    "湖南",
+    "广东",
+    "广西",
+    "海南",
+    "重庆",
+    "四川",
+    "贵州",
+  ],
+  wish: ["云南", "新疆", "西藏", "青海", "甘肃", "内蒙古", "黑龙江", "吉林"],
+};
+
+// 去过省份的拼贴配色，按 visited 名单顺序循环取用（每项是渐变的三段色）
+export const TRAVEL_TONES = [
+  ["#e8f4dc", "#a9d68b", "#7fbc5c"],
+  ["#dff0e6", "#93cfa6", "#5fa87a"],
+  ["#eaf3e0", "#b9dc9a", "#8cc169"],
+  ["#e2f1ea", "#9fd3be", "#67ab90"],
+  ["#edf5e2", "#c2e0a4", "#93c973"],
+  ["#e4f2e2", "#a6d49f", "#74b86c"],
+  ["#eef4e4", "#c6dfae", "#98c47c"],
+  ["#e1efe8", "#a2cfc0", "#6ca995"],
+  ["#e9f3dd", "#b4d98f", "#87bf63"],
+  ["#e5f1e4", "#a8d2a6", "#79b778"],
+];
+
+// 想换成真实照片时，给对应省份补一条即可（没配的用渐变占位）：
+//   浙江: { src: "/static/img/travel/hangzhou.jpg", caption: "杭州 · 西湖" }
+// 照片放到 public/static/img/travel/ 下，路径写 /static/img/travel/xxx.jpg
+export const TRAVEL_PHOTOS = {};
+
+// public/static/img/travel/ 下已有的图片，管理页会列出来供你直接点选（新增图片后改这里）
+export const TRAVEL_IMAGE_LIBRARY = [
+  { label: "杭州 · 西湖", src: "/static/img/travel/hunan.png" },
+  { label: "海边 · 黄昏", src: "/static/img/travel/cemina.jpg" },
+  { label: "雪山 · 白宫", src: "/static/img/travel/whiteGong.jpg" },
+  {
+    label: "山野 · 远行",
+    src: "/static/img/travel/e0e41b396623edcb6cf26a5571e647f4.jpg",
+  },
+];
+
+// 管理页解锁密码
+export const TRAVEL_ADMIN_PASSWORD = "yycjy0918";
+
+// 「最新足迹」大图卡
+export const TRAVEL_LATEST = {
+  city: "厦门 · 鼓浪屿",
+  date: "2024.06.14",
+  note: "第一次一起看海，风很温柔，你也很美。",
+  tone: ["#cfe4ef", "#f0dcc6"],
+};
+
+// 「最近足迹」列表
+// 想换成真实照片时给对应条目加 src 即可（没配的用渐变占位）：
+//   { id: 1, city: "杭州 · 西湖", date: "2024.05.20", src: "/static/img/travel/hangzhou.jpg", tone: [...] }
+export const TRAVEL_RECENT = [
+  {
+    id: 1,
+    city: "杭州 · 西湖",
+    date: "2024.05.20",
+    tone: ["#dbead8", "#a9cfa4"],
+  },
+  {
+    id: 2,
+    city: "张家界 · 袁家寨子",
+    date: "2024.04.15",
+    tone: ["#dfeae0", "#9fc4ab"],
+  },
+  {
+    id: 3,
+    city: "重庆 · 洪崖洞",
+    date: "2024.03.22",
+    tone: ["#f0e2d2", "#d0a97f"],
+  },
+  {
+    id: 4,
+    city: "大理 · 洱海",
+    date: "2024.03.08",
+    tone: ["#d8e8ee", "#a3c3d4"],
+  },
+  {
+    id: 5,
+    city: "青岛 · 八大关",
+    date: "2024.02.11",
+    tone: ["#e2ecec", "#a9c9c4"],
   },
 ];
