@@ -25,6 +25,10 @@ const PATHS = {
   camera: (
     <path d="M4 8h3l1.5-2h7L17 8h3v11H4zM12 16a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4z" />
   ),
+  plus: <path d="M12 5v14M5 12h14" />,
+  minus: <path d="M5 12h14" />,
+  reset: <path d="M4 10a8 8 0 1114 4M4 5v5h5" />,
+  refresh: <path d="M20 12a8 8 0 10-3 6.2M20 5v5h-5" />,
 };
 
 function UiIcon({ name, className = "ui-icon" }) {

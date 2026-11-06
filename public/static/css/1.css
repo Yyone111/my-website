@@ -5951,14 +5951,19 @@ body.dark-mode .line-hold::before,
    —— 左侧照片拼贴中国地图 + 足迹统计，右侧最新足迹大图卡 + 最近足迹列表
    ========================================================================== */
 .tm-page {
-  --tm-ink: #26313f;
-  --tm-ink-soft: #5b6472;
-  --tm-ink-faint: #93a3b8;
-  --tm-surface: #ffffff;
-  --tm-surface-soft: #f6faf2;
-  --tm-line: #e4ecdf;
-  --tm-green: #7bbf52;
-  --tm-green-deep: #6da93b;
+  --tm-ink: #5a6670;
+  --tm-ink-soft: #7d8894;
+  --tm-ink-faint: #a5afba;
+  --tm-surface: #fafbf7;
+  --tm-surface-soft: #f4f6f1;
+  --tm-line: #d8ddd8;
+  /* 绿已退役：沿用变量名，值换成参考项目的 bloom 粉（e8b8c2）与深粉（c98d9c） */
+  --tm-green: #e8b8c2;
+  --tm-green-deep: #c98d9c;
+  --tm-sky: #a8c8dc;
+  --tm-sakura: #f5dce0;
+  --tm-dim: #d8ddd8;
+  --tm-cream: #fafbf7;
 }
 
 /* ---- 标题区 ---- */
@@ -6013,57 +6018,93 @@ body.dark-mode .line-hold::before,
   min-width: 0;
 }
 
-/* ---- 地图 ---- */
+/* ---- 地图容器：固定比例 + 可缩放拖拽 ---- */
 .tm-map-wrap {
   position: relative;
   width: 100%;
   max-width: 660px;
   margin: 0 auto;
+  aspect-ratio: 1000 / 841;
+  overflow: hidden;
+  border-radius: 20px;
+  touch-action: none;
+  cursor: grab;
+  transition: box-shadow 0.28s ease;
+}
+
+.tm-map-wrap.is-zoomed {
+  cursor: grab;
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 184, 194, 0.22),
+    0 18px 40px rgba(90, 102, 112, 0.12);
+}
+
+.tm-map-wrap.is-dragging {
+  cursor: grabbing;
+}
+
+.tm-map-canvas {
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+/* 拖拽时关掉过渡，否则跟手会顿一下 */
+.tm-map-wrap.is-dragging .tm-map-canvas {
+  transition: none;
 }
 
 .tm-map {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
 }
 
 /* 陆地整体轻微抬离背景，避免和页面底色糊在一起 */
 .tm-lands {
-  filter: drop-shadow(0 6px 12px rgba(43, 95, 55, 0.14));
+  filter: drop-shadow(0 6px 12px rgba(90, 102, 112, 0.15));
 }
 
 .tm-prov {
-  stroke: #d2e2c8;
+  stroke: #d8ddd8;
   stroke-width: 1.1;
   stroke-linejoin: round;
+  cursor: pointer;
   transition:
-    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
     stroke 0.28s ease,
     stroke-width 0.28s ease,
-    filter 0.28s ease;
-  transform-box: fill-box;
-  transform-origin: center;
+    filter 0.28s ease,
+    fill-opacity 0.28s ease;
 }
 
 .tm-prov.is-visited {
-  stroke: rgba(109, 169, 59, 0.5);
+  stroke: rgba(232, 184, 194, 0.9);
+  filter: url(#tmVisitedGlow);
 }
 
 .tm-prov.is-wish {
-  fill: #edf7e4;
-  stroke: #a5d47c;
+  fill: rgba(168, 200, 220, 0.28);
+  stroke: #8fb8d4;
 }
 
 .tm-prov.is-todo {
-  fill: #f4f7f1;
-  stroke: #dde5d7;
+  fill: #f3f5f1;
+  stroke: #cfd6d2;
 }
 
+/* 悬停：加粗描边 + 粉色辉光提亮，不用位移，避免缩放时抖动 */
 .tm-prov.is-hover {
-  transform: translateY(-6px);
-  filter: drop-shadow(0 8px 12px rgba(43, 95, 55, 0.3));
+  filter: url(#tmVisitedGlow) drop-shadow(0 6px 10px rgba(90, 102, 112, 0.2));
   stroke: var(--tm-green-deep);
-  stroke-width: 1.6;
+  stroke-width: 1.8;
+}
+
+.tm-prov.is-selected {
+  stroke: var(--tm-green-deep);
+  stroke-width: 2.2;
+  filter: url(#tmVisitedGlow) drop-shadow(0 6px 12px rgba(90, 102, 112, 0.22));
 }
 
 /* ---- 地图加载中 / 失败 ---- */
@@ -6071,7 +6112,7 @@ body.dark-mode .line-hold::before,
   width: 100%;
   aspect-ratio: 1000 / 841;
   border-radius: 16px;
-  background: linear-gradient(100deg, #f3f7ef 30%, #eaf3e5 50%, #f3f7ef 70%);
+  background: linear-gradient(100deg, #f4f6f1 30%, #edf0ea 50%, #f4f6f1 70%);
   background-size: 220% 100%;
   animation: tmSkeleton 1.7s ease-in-out infinite;
 }
@@ -6093,18 +6134,21 @@ body.dark-mode .line-hold::before,
   color: var(--tm-ink-faint);
 }
 
-/* ---- 南海诸岛小图：钉在地图右下角的空白海面上，位置在台湾以南，不会压住陆地 ---- */
+/* ---- 南海诸岛小图：钉在地图右下角空白洋面（台湾以东），远离图例与工具条 ---- */
 .tm-nanhai {
   position: absolute;
-  right: 0.5%;
-  bottom: 0;
-  width: 52px;
+  left: auto;
+  right: 2.5%;
+  bottom: 3%;
+  z-index: 3;
+  width: 44px;
   margin: 0;
-  padding: 4px 4px 2px;
+  padding: 5px 5px 3px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(250, 251, 247, 0.92);
   border: 1px solid var(--tm-line);
-  box-shadow: 0 6px 16px rgba(43, 95, 155, 0.1);
+  box-shadow: 0 6px 16px rgba(90, 102, 112, 0.12);
+  pointer-events: none;
 }
 
 .tm-nanhai svg {
@@ -6115,7 +6159,7 @@ body.dark-mode .line-hold::before,
 
 .tm-nanhai path {
   fill: none;
-  stroke: #8fbf6a;
+  stroke: #d9a0ae;
   stroke-width: 2.4;
   stroke-linecap: round;
 }
@@ -6128,61 +6172,146 @@ body.dark-mode .line-hold::before,
   color: var(--tm-ink-faint);
 }
 
-/* ---- 悬停标签 ---- */
+/* ---- 缩放工具条：悬在地图左上角 ---- */
+.tm-tools {
+  position: absolute;
+  left: 3%;
+  top: 3%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: rgba(250, 251, 247, 0.92);
+  border: 1px solid var(--tm-line);
+  box-shadow: 0 10px 24px rgba(90, 102, 112, 0.14);
+  backdrop-filter: blur(6px);
+  cursor: default;
+}
+
+.tm-tool-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tm-ink-soft);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.tm-tool-btn:hover:not(:disabled) {
+  background: rgba(232, 184, 194, 0.2);
+  color: var(--tm-green-deep);
+}
+
+.tm-tool-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.tm-tool-btn.is-reset {
+  margin-left: 2px;
+  border-left: 1px solid var(--tm-line);
+  border-radius: 0 50% 50% 0;
+  padding-left: 4px;
+  width: 30px;
+}
+
+.tm-tool-ico {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+
+.tm-tool-pct {
+  min-width: 34px;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tm-ink-faint);
+}
+
+/* ---- 悬停标签：奶油卡片，左侧粉色小色块（对齐参考项目 hover card） ---- */
 .tm-tip {
   position: absolute;
   z-index: 4;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 11px;
+  padding: 5px 12px;
   border-radius: 999px;
-  background: rgba(31, 41, 55, 0.9);
-  color: #fff;
+  background: rgba(250, 251, 247, 0.94);
+  border: 1px solid var(--tm-line);
+  box-shadow: 0 10px 26px rgba(90, 102, 112, 0.14);
+  backdrop-filter: blur(6px);
+  color: var(--tm-ink);
   font-size: 11.5px;
   white-space: nowrap;
   pointer-events: none;
   transform: translate(-50%, -150%);
 }
 
+.tm-tip::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--tm-sakura);
+  box-shadow: inset 0 0 0 1px rgba(217, 160, 174, 0.7);
+}
+
 .tm-tip em {
   font-style: normal;
   font-size: 10.5px;
-  opacity: 0.7;
+  color: var(--tm-ink-soft);
 }
 
-/* ---- 足迹统计（叠在地图左下角的空白海面上） ---- */
-.tm-stats {
+/* ---- 图例 + 足迹统计（叠在地图左下角的空白海面上） ---- */
+.tm-legend {
   position: absolute;
-  left: 2%;
+  left: 3%;
   bottom: 3%;
   z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  width: 218px;
+  gap: 7px;
+  width: 178px;
   margin: 0;
-  padding: 13px 15px;
+  padding: 11px 13px 12px;
   list-style: none;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.93);
+  background: rgba(250, 251, 247, 0.93);
   border: 1px solid var(--tm-line);
-  box-shadow: 0 12px 28px rgba(43, 95, 155, 0.12);
+  box-shadow: 0 12px 28px rgba(90, 102, 112, 0.13);
   backdrop-filter: blur(6px);
+  cursor: default;
 }
 
 .tm-stat {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
+  gap: 7px;
+  font-size: 11.5px;
   line-height: 1.4;
   color: var(--tm-ink-soft);
 }
 
+.tm-stat-label {
+  min-width: 0;
+}
+
 .tm-stat strong {
   margin-left: auto;
-  font-size: 14.5px;
+  font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--tm-ink);
@@ -6196,20 +6325,37 @@ body.dark-mode .line-hold::before,
 }
 
 .tm-stat.is-visited .tm-dot {
-  background: linear-gradient(135deg, #a9d68b, #6da93b);
+  background: linear-gradient(135deg, #f2cfd7, #d9a0ae);
 }
 
 .tm-stat.is-wish .tm-dot {
-  background: #edf7e4;
-  box-shadow: inset 0 0 0 2px #a5d47c;
+  background: #eef6fb;
+  box-shadow: inset 0 0 0 2px #a8c8dc;
 }
 
 .tm-stat.is-todo .tm-dot {
-  background: #f4f7f1;
-  box-shadow: inset 0 0 0 1.5px #dde5d7;
+  background: #f7f8f5;
+  box-shadow: inset 0 0 0 1.5px #cfd6d2;
 }
 
-/* ---- 最新足迹大图卡 ---- */
+.tm-progress {
+  position: relative;
+  height: 4px;
+  margin-top: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f1e8eb;
+}
+
+.tm-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f2cfd7, #d9a0ae);
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---- 右栏卡片（随机相框 / 省份影集） ---- */
 .tm-latest {
   overflow: hidden;
   border-radius: 18px;
@@ -6217,17 +6363,106 @@ body.dark-mode .line-hold::before,
   border: 1px solid var(--tm-line);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 12px 30px rgba(43, 95, 155, 0.08);
+    0 12px 30px rgba(90, 102, 112, 0.09);
 }
 
-/* ---- 最新足迹大图卡：右栏收窄后图别太高，避免抢走地图的注意力 ---- */
+.tm-latest-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px 10px 14px;
+}
+
+.tm-latest-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--tm-ink);
+}
+
+.tm-latest-cam {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--tm-green-deep);
+}
+
+.tm-status-pill {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tm-status-pill.is-visited {
+  background: rgba(232, 184, 194, 0.2);
+  color: #b47689;
+}
+
+.tm-status-pill.is-wish {
+  background: rgba(168, 200, 220, 0.22);
+  color: #5b87a6;
+}
+
+.tm-status-pill.is-todo {
+  background: rgba(147, 163, 184, 0.16);
+  color: var(--tm-ink-faint);
+}
+
+.tm-shuffle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--tm-ink-faint);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.3s ease;
+}
+
+.tm-shuffle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tm-shuffle:hover:not(:disabled) {
+  background: rgba(232, 184, 194, 0.16);
+  color: var(--tm-green-deep);
+  transform: rotate(-90deg);
+}
+
+.tm-shuffle:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ---- 大图卡：右栏收窄后图别太高，避免抢走地图的注意力 ---- */
 .tm-latest-shot {
   position: relative;
-  aspect-ratio: 16 / 9;
+  margin: 0 12px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 12px;
   background: linear-gradient(
     150deg,
-    var(--tone-a, #d6e2f2),
-    var(--tone-b, #c2d3e8)
+    var(--tone-a, #f2e9ec),
+    var(--tone-b, #e3c9d2)
   );
 }
 
@@ -6261,15 +6496,15 @@ body.dark-mode .line-hold::before,
 
 .tm-shot-icon {
   position: relative;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   stroke-width: 1.4;
   color: rgba(255, 255, 255, 0.72);
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
 }
 
 .tm-latest-body {
-  padding: 14px 16px 16px;
+  padding: 11px 14px 14px;
 }
 
 .tm-latest-body h3 {
@@ -6277,7 +6512,7 @@ body.dark-mode .line-hold::before,
   align-items: center;
   gap: 6px;
   margin: 0;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 700;
   color: var(--tm-ink);
 }
@@ -6291,19 +6526,113 @@ body.dark-mode .line-hold::before,
 
 .tm-date {
   margin: 5px 0 0;
-  font-size: 11.5px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
   color: var(--tm-ink-faint);
 }
 
 .tm-note {
-  margin: 10px 0 0;
-  padding-top: 10px;
+  margin: 9px 0 0;
+  padding-top: 9px;
   border-top: 1px dashed var(--tm-line);
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.7;
   color: var(--tm-ink-soft);
+}
+
+.tm-latest-link {
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tm-green-deep);
+  cursor: pointer;
+}
+
+.tm-latest-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- 省份影集 ---- */
+.tm-album-shot {
+  aspect-ratio: 4 / 3;
+}
+
+.tm-album-count {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(20, 28, 38, 0.62);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.tm-album-thumbs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.tm-album-thumb {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: var(--tm-surface-soft);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.tm-album-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tm-album-thumb:hover {
+  transform: translateY(-1px);
+}
+
+.tm-album-thumb.is-active {
+  border-color: var(--tm-green);
+}
+
+.tm-album-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0 12px;
+  padding: 34px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--tm-line);
+  background: var(--tm-surface-soft);
+  text-align: center;
+  color: var(--tm-ink-faint);
+}
+
+.tm-album-empty svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tm-album-empty p {
+  margin: 0;
+  font-size: 12.5px;
 }
 
 /* ---- 最近足迹列表 ---- */
@@ -6314,7 +6643,7 @@ body.dark-mode .line-hold::before,
   border: 1px solid var(--tm-line);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 12px 30px rgba(43, 95, 155, 0.08);
+    0 12px 30px rgba(90, 102, 112, 0.09);
 }
 
 .tm-recent-head {
@@ -6348,7 +6677,7 @@ body.dark-mode .line-hold::before,
   align-items: center;
   gap: 11px;
   padding: 9px 0;
-  border-top: 1px solid #f1f5ee;
+  border-top: 1px solid #f0f1ec;
 }
 
 .tm-recent-item:first-child {
@@ -6362,8 +6691,8 @@ body.dark-mode .line-hold::before,
   border-radius: 10px;
   background: linear-gradient(
     140deg,
-    var(--tone-a, #d6e2f2),
-    var(--tone-b, #c2d3e8)
+    var(--tone-a, #f2e9ec),
+    var(--tone-b, #e3c9d2)
   );
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
   overflow: hidden;
@@ -6386,7 +6715,7 @@ body.dark-mode .line-hold::before,
 .tm-recent-text strong {
   font-size: 13.5px;
   font-weight: 600;
-  color: #3a4757;
+  color: var(--tm-ink);
 }
 
 .tm-recent-text em {
@@ -6422,13 +6751,13 @@ body.dark-mode .line-hold::before,
   }
 }
 
-/* 窄屏：统计卡不再叠在地图上，改为地图下方常规排布 */
+/* 窄屏：图例不再叠在地图上，改为地图下方常规排布 */
 @media (max-width: 720px) {
   .tm-side {
     flex-direction: column;
   }
 
-  .tm-stats {
+  .tm-legend {
     position: static;
     width: 100%;
     max-width: 660px;
@@ -6436,9 +6765,18 @@ body.dark-mode .line-hold::before,
   }
 
   .tm-nanhai {
-    right: 0;
-    bottom: 0;
-    width: 46px;
+    right: 2%;
+    bottom: 2%;
+    width: 44px;
+  }
+
+  .tm-tools {
+    left: 2%;
+    top: 2%;
+  }
+
+  .tm-stat {
+    font-size: 11px;
   }
 }
 
@@ -6460,8 +6798,8 @@ body.dark-mode .tm-title,
 
 body.dark-mode .tm-prov.is-wish,
 [data-theme="dark"] .tm-prov.is-wish {
-  fill: rgba(123, 191, 82, 0.16);
-  stroke: #5f8f45;
+  fill: rgba(168, 200, 220, 0.16);
+  stroke: #7fa7c4;
 }
 
 body.dark-mode .tm-prov.is-todo,
@@ -6478,13 +6816,51 @@ body.dark-mode .tm-thumb,
 }
 
 body.dark-mode .tm-stats,
-[data-theme="dark"] .tm-stats {
+[data-theme="dark"] .tm-stats,
+body.dark-mode .tm-legend,
+[data-theme="dark"] .tm-legend,
+body.dark-mode .tm-tools,
+[data-theme="dark"] .tm-tools {
   background: rgba(20, 29, 42, 0.9);
+}
+
+body.dark-mode .tm-progress,
+[data-theme="dark"] .tm-progress {
+  background: rgba(232, 184, 194, 0.16);
+}
+
+body.dark-mode .tm-status-pill.is-visited,
+[data-theme="dark"] .tm-status-pill.is-visited {
+  background: rgba(232, 184, 194, 0.24);
+  color: #f0c3cd;
+}
+
+body.dark-mode .tm-status-pill.is-wish,
+[data-theme="dark"] .tm-status-pill.is-wish {
+  background: rgba(168, 200, 220, 0.22);
+  color: #9cc6e0;
+}
+
+body.dark-mode .tm-album-empty,
+[data-theme="dark"] .tm-album-empty {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 body.dark-mode .tm-nanhai,
 [data-theme="dark"] .tm-nanhai {
   background: rgba(20, 29, 42, 0.9);
+}
+
+body.dark-mode .tm-tip,
+[data-theme="dark"] .tm-tip {
+  background: rgba(20, 29, 42, 0.92);
+  border-color: rgba(120, 150, 190, 0.2);
+  color: #e3ebf4;
+}
+
+body.dark-mode .tm-tip em,
+[data-theme="dark"] .tm-tip em {
+  color: #9db0c6;
 }
 
 body.dark-mode .tm-recent-item,
@@ -6553,13 +6929,14 @@ body.dark-mode .tm-map-skeleton,
    —— 密码门 + 省份/大图卡/缩略图的照片配置
    ========================================================================== */
 .ta-page {
-  --ta-ink: #26313f;
-  --ta-ink-soft: #5b6472;
-  --ta-ink-faint: #93a3b8;
-  --ta-surface: #ffffff;
-  --ta-line: #e4ecdf;
-  --ta-green: #7bbf52;
-  --ta-green-deep: #6da93b;
+  --ta-ink: #5a6670;
+  --ta-ink-soft: #7d8894;
+  --ta-ink-faint: #a5afba;
+  --ta-surface: #fafbf7;
+  --ta-line: #d8ddd8;
+  --ta-green: #e8b8c2;
+  --ta-green-deep: #c98d9c;
+  --ta-sky: #a8c8dc;
 }
 
 .ta-head {
@@ -6622,7 +6999,7 @@ body.dark-mode .tm-map-skeleton,
 }
 
 .ta-btn.is-primary {
-  background: linear-gradient(135deg, #8ccb5f, var(--ta-green-deep));
+  background: linear-gradient(135deg, #d99dab, #bf7f8e);
   border-color: transparent;
   color: #fff;
   font-weight: 600;
@@ -6665,7 +7042,7 @@ body.dark-mode .tm-map-skeleton,
   border: 1px solid var(--ta-line);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 14px 34px rgba(43, 95, 155, 0.1);
+    0 14px 34px rgba(90, 102, 112, 0.12);
 }
 
 .ta-gate-icon {
@@ -6676,7 +7053,7 @@ body.dark-mode .tm-map-skeleton,
   height: 44px;
   margin-bottom: 12px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #eaf6dd, #d3ecc0);
+  background: linear-gradient(135deg, #fbeef1, #f0cdd6);
   color: var(--ta-green-deep);
 }
 
@@ -6722,7 +7099,7 @@ body.dark-mode .tm-map-skeleton,
   padding: 9px 12px;
   border-radius: 10px;
   border: 1px solid var(--ta-line);
-  background: #fbfdf8;
+  background: #fbfaf7;
   font-size: 13px;
   color: var(--ta-ink);
   outline: none;
@@ -6737,7 +7114,7 @@ body.dark-mode .tm-map-skeleton,
 
 .ta-input:focus {
   border-color: var(--ta-green);
-  box-shadow: 0 0 0 3px rgba(123, 191, 82, 0.16);
+  box-shadow: 0 0 0 3px rgba(232, 184, 194, 0.2);
 }
 
 .ta-file {
@@ -6798,7 +7175,7 @@ body.dark-mode .tm-map-skeleton,
 }
 
 .ta-tab.is-active {
-  background: linear-gradient(135deg, #8ccb5f, var(--ta-green-deep));
+  background: linear-gradient(135deg, #d99dab, #bf7f8e);
   border-color: transparent;
   color: #fff;
   font-weight: 600;
@@ -6824,7 +7201,7 @@ body.dark-mode .tm-map-skeleton,
   border: 1px solid var(--ta-line);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 12px 30px rgba(43, 95, 155, 0.07);
+    0 12px 30px rgba(90, 102, 112, 0.08);
 }
 
 /* ---- 省份选择 ---- */
@@ -6845,7 +7222,7 @@ body.dark-mode .tm-map-skeleton,
   overflow: hidden;
   border-radius: 10px;
   border: 1px solid var(--ta-line);
-  background: #fbfdf8;
+  background: #fbfaf7;
   font-size: 12.5px;
   color: var(--ta-ink-soft);
   cursor: pointer;
@@ -6868,8 +7245,8 @@ body.dark-mode .tm-map-skeleton,
 }
 
 .ta-prov.has-photo {
-  color: #1f3d17;
-  border-color: rgba(109, 169, 59, 0.45);
+  color: #7c4a56;
+  border-color: rgba(217, 160, 174, 0.5);
 }
 
 .ta-prov.has-photo span {
@@ -6880,7 +7257,7 @@ body.dark-mode .tm-map-skeleton,
 
 .ta-prov.is-active {
   border-color: var(--ta-green-deep);
-  box-shadow: 0 0 0 3px rgba(123, 191, 82, 0.18);
+  box-shadow: 0 0 0 3px rgba(232, 184, 194, 0.24);
   color: var(--ta-ink);
 }
 
@@ -6888,47 +7265,137 @@ body.dark-mode .tm-map-skeleton,
 .ta-field {
   padding: 14px;
   border-radius: 12px;
-  background: #f9fcf6;
+  background: #fbf6f7;
   border: 1px dashed var(--ta-line);
 }
 
-.ta-field-row {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
+/* ---- 影集编辑器 ---- */
+.ta-album {
+  margin-bottom: 12px;
 }
 
-.ta-preview {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 112px;
-  height: 84px;
+.ta-album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+}
+
+.ta-album-cell {
+  position: relative;
   overflow: hidden;
+  aspect-ratio: 4 / 3;
   border-radius: 10px;
-  background: linear-gradient(140deg, #eef6e6, #dcecd0);
   border: 1px solid var(--ta-line);
+  background: linear-gradient(140deg, #faedf0, #eccfd7);
 }
 
-.ta-preview img {
+.ta-album-cell.is-cover {
+  border-color: var(--ta-green-deep);
+  box-shadow: 0 0 0 2px rgba(232, 184, 194, 0.28);
+}
+
+.ta-album-cell img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.ta-preview-empty {
+.ta-album-badge {
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(20, 28, 38, 0.62);
+  font-size: 10px;
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.ta-album-cell.is-cover .ta-album-badge {
+  background: rgba(201, 141, 156, 0.9);
+}
+
+/* 操作条默认隐藏，悬停/聚焦时浮上来，避免小格子里太挤 */
+.ta-album-actions {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 4px;
+  background: linear-gradient(
+    to top,
+    rgba(16, 24, 34, 0.72),
+    rgba(16, 24, 34, 0)
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ta-album-cell:hover .ta-album-actions,
+.ta-album-cell:focus-within .ta-album-actions {
+  opacity: 1;
+}
+
+.ta-album-btn {
+  padding: 2px 7px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 10px;
+  font-weight: 600;
+  color: #2f3a47;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.ta-album-btn:hover {
+  background: #fff;
+}
+
+.ta-album-btn.is-remove {
+  color: #b04a4a;
+}
+
+.ta-album-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 6px;
+  padding: 30px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--ta-line);
+  background: #fbfaf7;
+  text-align: center;
+  font-size: 12px;
   color: var(--ta-ink-faint);
 }
 
-.ta-preview-empty svg {
-  width: 18px;
-  height: 18px;
+.ta-album-empty svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ta-album-empty p {
+  margin: 0;
+}
+
+.ta-url-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ta-url-row .ta-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ta-url-row .ta-btn {
+  flex: none;
+  white-space: nowrap;
 }
 
 .ta-field-body {
@@ -6986,7 +7453,7 @@ body.dark-mode .tm-map-skeleton,
 
 .ta-chip.is-active {
   border-color: var(--ta-green-deep);
-  box-shadow: 0 0 0 3px rgba(123, 191, 82, 0.16);
+  box-shadow: 0 0 0 3px rgba(232, 184, 194, 0.22);
 }
 
 .ta-chip img {
@@ -7021,7 +7488,7 @@ body.dark-mode .tm-map-skeleton,
   padding: 8px 12px;
   border-radius: 12px;
   border: 1px solid var(--ta-line);
-  background: #fbfdf8;
+  background: #fbfaf7;
   text-align: left;
   cursor: pointer;
   transition:
@@ -7031,7 +7498,7 @@ body.dark-mode .tm-map-skeleton,
 
 .ta-recent-row.is-active {
   border-color: var(--ta-green-deep);
-  box-shadow: 0 0 0 3px rgba(123, 191, 82, 0.16);
+  box-shadow: 0 0 0 3px rgba(232, 184, 194, 0.22);
 }
 
 .ta-recent-thumb {
@@ -7122,15 +7589,6 @@ body.dark-mode .tm-map-skeleton,
     align-items: stretch;
   }
 
-  .ta-field-row {
-    flex-direction: column;
-  }
-
-  .ta-preview {
-    width: 100%;
-    height: 132px;
-  }
-
   .ta-foot {
     flex-direction: column;
     align-items: flex-start;
@@ -7165,7 +7623,7 @@ body.dark-mode .ta-recent-row,
 
 body.dark-mode .ta-prov.has-photo,
 [data-theme="dark"] .ta-prov.has-photo {
-  color: #dbead3;
+  color: #eac8cf;
 }
 
 body.dark-mode .ta-prov.has-photo span,
@@ -7173,12 +7631,17 @@ body.dark-mode .ta-prov.has-photo span,
   background: rgba(12, 19, 30, 0.78);
 }
 
-body.dark-mode .ta-preview,
-[data-theme="dark"] .ta-preview {
+body.dark-mode .ta-album-empty,
+[data-theme="dark"] .ta-album-empty {
+  background: rgba(12, 19, 30, 0.6);
+}
+
+body.dark-mode .ta-album-cell,
+[data-theme="dark"] .ta-album-cell {
   background: linear-gradient(140deg, #1a2634, #16202c);
 }
 
 body.dark-mode .ta-gate-icon,
 [data-theme="dark"] .ta-gate-icon {
-  background: linear-gradient(135deg, #22331c, #2c4423);
+  background: linear-gradient(135deg, #3a2730, #4a2f3a);
 }

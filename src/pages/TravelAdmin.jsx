@@ -4,15 +4,16 @@ import {
   TRAVEL_ADMIN_PASSWORD,
   TRAVEL_IMAGE_LIBRARY,
   TRAVEL_LATEST,
+  TRAVEL_PROVINCES,
   TRAVEL_PROVINCE_STATUS,
   TRAVEL_RECENT,
-  TRAVEL_TONES,
 } from "../data";
 import {
   EMPTY_TRAVEL_CONFIG,
   TRAVEL_PHOTOS_EVENT,
-  fileToDataUrl,
+  compressImageFiles,
   isAdminUnlocked,
+  normalizeAlbum,
   readTravelConfig,
   resetTravelConfig,
   setAdminUnlocked,
@@ -22,9 +23,10 @@ import {
 /**
  * 旅行照片管理页（#/travel-admin）
  * - 进入需输入密码，解锁状态只在当前标签页的 session 里有效
- * - 可给地图省份、最新足迹大图卡、最近足迹缩略图配置照片
- * - 照片支持本地上传（压缩成 dataURL）或填写图片链接 / 项目内路径
- * - 配置存 localStorage，只在本机生效
+ * - 每个位置都是一个「影集」：可以放多张照片，并指定其中一张作为封面
+ * - 封面决定地图省份的拼贴、最近足迹的缩略图
+ * - 照片支持本地上传（多选，压缩成 dataURL）或填写图片链接 / 项目内路径
+ * - 配置存 localStorage，只本机生效
  *
  * 注意：这是纯前端密码，只能挡住误入的访客，不能防住会看源码的人。
  * 真正敏感的数据应放在服务端校验。
@@ -32,11 +34,16 @@ import {
 
 const TABS = [
   { key: "provinces", label: "地图省份" },
-  { key: "latest", label: "最新足迹" },
+  { key: "latest", label: "随机相框" },
   { key: "recent", label: "最近足迹" },
 ];
 
+// 已去过的省份排在前面，其余按行政区顺序跟在后面
 const VISITED = TRAVEL_PROVINCE_STATUS.visited;
+const PROVINCE_OPTIONS = [
+  ...VISITED,
+  ...TRAVEL_PROVINCES.filter((name) => !VISITED.includes(name)),
+];
 
 /* ---- 小的可复用块 ---- */
 
@@ -54,97 +61,184 @@ function ImageChip({ src, label, onUse, active }) {
   );
 }
 
-function PhotoField({ value, onChange, caption, onCaptionChange, hint }) {
+/**
+ * 一个影集位置的照片编辑器。
+ * album 为 { photos, cover, caption }，没配过时传 null。
+ */
+function AlbumField({ album, onChange, hint, withCaption }) {
   const fileRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [urlInput, setUrlInput] = useState("");
 
-  const pickFile = async (event) => {
-    const file = event.target.files?.[0];
+  const photos = album?.photos || [];
+  const cover = album?.cover ?? 0;
+
+  const patch = (next) => {
+    const merged = {
+      photos: next.photos ?? photos,
+      cover: next.cover ?? cover,
+      caption: next.caption ?? album?.caption ?? "",
+    };
+    onChange(merged.photos.length > 0 ? merged : null);
+  };
+
+  const pickFiles = async (event) => {
+    const files = Array.from(event.target.files || []);
     event.target.value = "";
-    if (!file) return;
+    if (files.length === 0) return;
 
     setBusy(true);
     setError("");
     try {
-      const dataUrl = await fileToDataUrl(file);
-      onChange(dataUrl);
-    } catch (err) {
-      setError(err.message || "上传失败");
+      const { ok, failed } = await compressImageFiles(files, {
+        maxDimension: 1000,
+        quality: 0.68,
+      });
+      if (ok.length > 0) {
+        patch({ photos: [...photos, ...ok] });
+      }
+      if (failed.length > 0) {
+        setError(`有 ${failed.length} 张没处理成功：${failed[0]}`);
+      }
     } finally {
       setBusy(false);
     }
+  };
+
+  const addUrl = () => {
+    const src = urlInput.trim();
+    if (!src) return;
+    setUrlInput("");
+    setError("");
+    patch({ photos: [...photos, src] });
+  };
+
+  const removeAt = (index) => {
+    const nextPhotos = photos.filter((_, i) => i !== index);
+    const nextCover =
+      index === cover ? 0 : index < cover ? Math.max(0, cover - 1) : cover;
+    onChange(
+      nextPhotos.length > 0
+        ? {
+            photos: nextPhotos,
+            cover: nextCover,
+            caption: album?.caption || "",
+          }
+        : null,
+    );
   };
 
   return (
     <div className="ta-field">
       {hint && <p className="ta-hint">{hint}</p>}
 
-      <div className="ta-field-row">
-        <div className="ta-preview">
-          {value ? (
-            <img src={value} alt="当前照片预览" />
-          ) : (
-            <span className="ta-preview-empty">
-              <UiIcon name="camera" />
-              未设置
-            </span>
-          )}
-        </div>
-
-        <div className="ta-field-body">
-          <input
-            type="url"
-            className="ta-input"
-            placeholder="粘贴图片链接，或 /static/img/travel/xxx.jpg"
-            value={value?.startsWith("data:") ? "" : value || ""}
-            onChange={(event) => onChange(event.target.value.trim())}
-          />
-          {value?.startsWith("data:") && (
-            <p className="ta-tag-note">当前使用本地上传的图片</p>
-          )}
-
-          <div className="ta-field-actions">
-            <button
-              type="button"
-              className="ta-btn"
-              onClick={() => fileRef.current?.click()}
-              disabled={busy}
-            >
-              {busy ? "处理中…" : "上传本地图片"}
-            </button>
-            {value && (
-              <button
-                type="button"
-                className="ta-btn is-ghost"
-                onClick={() => onChange("")}
-              >
-                移除
-              </button>
-            )}
+      <div className="ta-album">
+        {photos.length === 0 ? (
+          <div className="ta-album-empty">
+            <UiIcon name="camera" />
+            <p>还没有照片</p>
           </div>
-
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="ta-file"
-            onChange={pickFile}
-          />
-
-          {onCaptionChange && (
-            <input
-              type="text"
-              className="ta-input"
-              placeholder="配文（可选），如 杭州 · 西湖"
-              value={caption || ""}
-              onChange={(event) => onCaptionChange(event.target.value)}
-            />
-          )}
-
-          {error && <p className="ta-error">{error}</p>}
-        </div>
+        ) : (
+          <div className="ta-album-grid">
+            {photos.map((src, index) => (
+              <div
+                key={`${src.slice(-24)}-${index}`}
+                className={`ta-album-cell ${index === cover ? "is-cover" : ""}`}
+              >
+                <img src={src} alt={`第 ${index + 1} 张`} loading="lazy" />
+                <span className="ta-album-badge">
+                  {index === cover ? "封面" : `第 ${index + 1} 张`}
+                </span>
+                <div className="ta-album-actions">
+                  {index !== cover && (
+                    <button
+                      type="button"
+                      className="ta-album-btn"
+                      onClick={() => patch({ cover: index })}
+                    >
+                      设封面
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="ta-album-btn is-remove"
+                    onClick={() => removeAt(index)}
+                    aria-label={`删除第 ${index + 1} 张照片`}
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      <div className="ta-field-actions">
+        <button
+          type="button"
+          className="ta-btn is-primary"
+          onClick={() => fileRef.current?.click()}
+          disabled={busy}
+        >
+          {busy ? "处理中…" : photos.length ? "继续添加照片" : "上传本地图片"}
+        </button>
+        {photos.length > 0 && (
+          <button
+            type="button"
+            className="ta-btn is-ghost"
+            onClick={() => onChange(null)}
+          >
+            清空这组
+          </button>
+        )}
+      </div>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="ta-file"
+        onChange={pickFiles}
+      />
+
+      <div className="ta-url-row">
+        <input
+          type="url"
+          className="ta-input"
+          placeholder="也可以用图片链接：/static/img/travel/xxx.jpg"
+          value={urlInput}
+          onChange={(event) => setUrlInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              addUrl();
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="ta-btn"
+          onClick={addUrl}
+          disabled={!urlInput.trim()}
+        >
+          添加
+        </button>
+      </div>
+
+      {withCaption && (
+        <input
+          type="text"
+          className="ta-input"
+          placeholder="配文（可选），如 杭州 · 西湖"
+          value={album?.caption || ""}
+          onChange={(event) => patch({ caption: event.target.value })}
+        />
+      )}
+
+      {error && <p className="ta-error">{error}</p>}
     </div>
   );
 }
@@ -240,11 +334,21 @@ export default function TravelAdmin() {
   };
 
   const configuredProvinceCount = useMemo(
-    () =>
-      Object.values(config.provinces || {}).filter((entry) => entry?.src)
-        .length,
+    () => Object.keys(config.provinces || {}).length,
     [config],
   );
+
+  const photoCount = useMemo(() => {
+    let count = 0;
+    Object.values(config.provinces || {}).forEach((entry) => {
+      count += normalizeAlbum(entry)?.photos.length || 0;
+    });
+    count += normalizeAlbum(config.latest)?.photos.length || 0;
+    Object.values(config.recent || {}).forEach((entry) => {
+      count += normalizeAlbum(entry)?.photos.length || 0;
+    });
+    return count;
+  }, [config]);
 
   if (!unlocked) {
     return (
@@ -254,32 +358,28 @@ export default function TravelAdmin() {
     );
   }
 
-  const currentProvince = config.provinces?.[activeProvince] || {};
   const currentRecent =
     TRAVEL_RECENT.find((item) => item.id === activeRecentId) ||
     TRAVEL_RECENT[0];
 
   /* ---- 省份 ---- */
-  const setProvince = (name, patch) => {
+  const setProvince = (name, album) => {
     const provinces = { ...(config.provinces || {}) };
-    const next = { ...(provinces[name] || {}), ...patch };
-    if (!next.src) delete provinces[name];
-    else provinces[name] = next;
+    if (!album) delete provinces[name];
+    else provinces[name] = album;
     save({ ...config, provinces });
   };
 
-  /* ---- 最新足迹 ---- */
-  const setLatest = (patch) => {
-    const next = { ...(config.latest || {}), ...patch };
-    if (!next.src) save({ ...config, latest: null });
-    else save({ ...config, latest: next });
+  /* ---- 随机相框 ---- */
+  const setLatest = (album) => {
+    save({ ...config, latest: album || null });
   };
 
-  /* ---- 最近足迹缩略图 ---- */
-  const setRecent = (id, src) => {
+  /* ---- 最近足迹 ---- */
+  const setRecent = (id, album) => {
     const recent = { ...(config.recent || {}) };
-    if (!src) delete recent[id];
-    else recent[id] = { src };
+    if (!album) delete recent[id];
+    else recent[id] = album;
     save({ ...config, recent });
   };
 
@@ -324,53 +424,69 @@ export default function TravelAdmin() {
       {tab === "provinces" && (
         <section className="ta-panel">
           <p className="ta-hint">
-            选择省份，再给它配一张照片。配了照片的省份会用照片铺满省界；没配的仍用绿色渐变。
+            选一个省份，把照片放进去。封面那张会铺满地图上的省界，配了照片的省份会自动点亮；
+            同一省份的多张照片可以在旅行地图上点开翻看。
           </p>
 
           <div className="ta-prov-list">
-            {VISITED.map((name) => {
-              const entry = config.provinces?.[name];
+            {PROVINCE_OPTIONS.map((name) => {
+              const entry = normalizeAlbum(config.provinces?.[name]);
+              const count = entry?.photos.length || 0;
               return (
                 <button
                   key={name}
                   type="button"
                   className={`ta-prov ${activeProvince === name ? "is-active" : ""} ${
-                    entry?.src ? "has-photo" : ""
+                    count > 0 ? "has-photo" : ""
                   }`}
                   onClick={() => setActiveProvince(name)}
                 >
-                  {entry?.src && <img src={entry.src} alt="" loading="lazy" />}
-                  <span>{name}</span>
+                  {count > 0 && (
+                    <img
+                      src={entry.photos[entry.cover]}
+                      alt=""
+                      loading="lazy"
+                    />
+                  )}
+                  <span>
+                    {name}
+                    {count > 1 ? ` · ${count}` : ""}
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          <PhotoField
-            value={currentProvince.src || ""}
-            caption={currentProvince.caption || ""}
-            onChange={(src) => setProvince(activeProvince, { src })}
-            onCaptionChange={(caption) =>
-              setProvince(activeProvince, { caption })
-            }
+          <AlbumField
+            key={activeProvince}
+            album={normalizeAlbum(config.provinces?.[activeProvince])}
+            onChange={(album) => setProvince(activeProvince, album)}
             hint={`正在配置：${activeProvince}`}
+            withCaption
           />
 
           <div className="ta-library">
-            <p className="ta-library-title">项目里已有的图片</p>
+            <p className="ta-library-title">
+              项目里已有的图片（点一下直接加进这组）
+            </p>
             <div className="ta-chip-row">
               {TRAVEL_IMAGE_LIBRARY.map((item) => (
                 <ImageChip
                   key={item.src}
                   src={item.src}
                   label={item.label}
-                  active={currentProvince.src === item.src}
-                  onUse={(src) =>
+                  onUse={(src) => {
+                    const current = normalizeAlbum(
+                      config.provinces?.[activeProvince],
+                    );
+                    const photos = current?.photos || [];
+                    if (photos.includes(src)) return;
                     setProvince(activeProvince, {
-                      src,
-                      caption: currentProvince.caption || item.label,
-                    })
-                  }
+                      photos: [...photos, src],
+                      cover: current?.cover ?? 0,
+                      caption: current?.caption || item.label,
+                    });
+                  }}
                 />
               ))}
             </div>
@@ -381,13 +497,13 @@ export default function TravelAdmin() {
       {tab === "latest" && (
         <section className="ta-panel">
           <p className="ta-hint">
-            右侧「最新足迹」大图卡的照片。文字信息仍由 data.js 里的
-            TRAVEL_LATEST 决定。
+            旅行地图右栏「随机相框」的照片。这里放几张，页面上可以随机切换；
+            文字信息仍由 data.js 里的 TRAVEL_LATEST 决定。
           </p>
 
-          <PhotoField
-            value={config.latest?.src || ""}
-            onChange={(src) => setLatest({ src })}
+          <AlbumField
+            album={normalizeAlbum(config.latest)}
+            onChange={setLatest}
             hint={`当前：${TRAVEL_LATEST.city} · ${TRAVEL_LATEST.date}`}
           />
 
@@ -399,8 +515,16 @@ export default function TravelAdmin() {
                   key={item.src}
                   src={item.src}
                   label={item.label}
-                  active={config.latest?.src === item.src}
-                  onUse={(src) => setLatest({ src })}
+                  onUse={(src) => {
+                    const current = normalizeAlbum(config.latest);
+                    const photos = current?.photos || [];
+                    if (photos.includes(src)) return;
+                    setLatest({
+                      photos: [...photos, src],
+                      cover: current?.cover ?? 0,
+                      caption: "",
+                    });
+                  }}
                 />
               ))}
             </div>
@@ -411,12 +535,13 @@ export default function TravelAdmin() {
       {tab === "recent" && (
         <section className="ta-panel">
           <p className="ta-hint">
-            右侧「最近足迹」列表的缩略图。点一条开始配置，没配的显示渐变底色。
+            旅行地图右栏「最近足迹」列表的缩略图。点一条开始配置，没配的显示渐变底色。
           </p>
 
           <div className="ta-recent-list">
             {TRAVEL_RECENT.map((item) => {
-              const entry = config.recent?.[item.id];
+              const entry = normalizeAlbum(config.recent?.[item.id]);
+              const cover = entry ? entry.photos[entry.cover] : "";
               return (
                 <button
                   key={item.id}
@@ -433,25 +558,24 @@ export default function TravelAdmin() {
                       "--tone-b": item.tone[1],
                     }}
                   >
-                    {entry?.src && (
-                      <img src={entry.src} alt="" loading="lazy" />
-                    )}
+                    {cover && <img src={cover} alt="" loading="lazy" />}
                   </span>
                   <span className="ta-recent-info">
                     <strong>{item.city}</strong>
                     <em>{item.date}</em>
                   </span>
                   <span className="ta-recent-state">
-                    {entry?.src ? "已配照片" : "渐变占位"}
+                    {entry ? `${entry.photos.length} 张` : "渐变占位"}
                   </span>
                 </button>
               );
             })}
           </div>
 
-          <PhotoField
-            value={config.recent?.[activeRecentId]?.src || ""}
-            onChange={(src) => setRecent(activeRecentId, src)}
+          <AlbumField
+            key={activeRecentId}
+            album={normalizeAlbum(config.recent?.[activeRecentId])}
+            onChange={(album) => setRecent(activeRecentId, album)}
             hint={`正在配置：${currentRecent.city} · ${currentRecent.date}`}
           />
 
@@ -463,8 +587,18 @@ export default function TravelAdmin() {
                   key={item.src}
                   src={item.src}
                   label={item.label}
-                  active={config.recent?.[activeRecentId]?.src === item.src}
-                  onUse={(src) => setRecent(activeRecentId, src)}
+                  onUse={(src) => {
+                    const current = normalizeAlbum(
+                      config.recent?.[activeRecentId],
+                    );
+                    const photos = current?.photos || [];
+                    if (photos.includes(src)) return;
+                    setRecent(activeRecentId, {
+                      photos: [...photos, src],
+                      cover: current?.cover ?? 0,
+                      caption: "",
+                    });
+                  }}
                 />
               ))}
             </div>
@@ -476,7 +610,8 @@ export default function TravelAdmin() {
 
       <footer className="ta-foot">
         <span>
-          已配置 {configuredProvinceCount} 个省份照片 · 配置仅本机可见
+          已配置 {configuredProvinceCount} 个省份 · 共 {photoCount} 张照片 ·
+          仅本机可见
         </span>
         <button
           type="button"

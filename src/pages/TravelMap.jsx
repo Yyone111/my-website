@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import UiIcon from "../components/UiIcon";
 import {
   TRAVEL_LATEST,
@@ -7,18 +7,29 @@ import {
   TRAVEL_RECENT,
   TRAVEL_TONES,
 } from "../data";
-import { TRAVEL_PHOTOS_EVENT, readTravelConfig } from "../lib/travelPhotos";
+import {
+  TRAVEL_PHOTOS_EVENT,
+  albumCover,
+  albumPhotos,
+  normalizeAlbum,
+  readTravelConfig,
+} from "../lib/travelPhotos";
 
 /**
  * 旅行地图
- * - 左侧：按省份状态上色的中国地图（去过=渐变/照片拼贴，想去=描边，没去=留白）+ 足迹统计
- * - 右侧：最新足迹大图卡 + 最近足迹列表
+ * - 左侧：按省份状态上色的中国地图，可缩放 / 拖拽 / 一键复位，悬停给出省份提示
+ * - 点击省份：右栏切成该省的影集卡，可翻看省内的多张照片
+ * - 右栏默认是随机相框：在全部已配置照片里随机换一张
  * - 照片优先取本机浏览器里配置好的（照片管理页写入），没有就用 data.js 的默认值
  * - 地图数据是离线投影抽稀好的静态 JSON（public/static/geo/china-provinces.json），
  *   页面加载后再取，不进主包
  */
 
 const GEO_URL = "/static/geo/china-provinces.json";
+
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 2.2;
+const ZOOM_STEP = 0.18;
 
 // 每个省自己的渐变方向，避免整张地图一个走向、看起来像色块
 const GRADIENT_DIRS = [
@@ -31,14 +42,191 @@ const GRADIENT_DIRS = [
 
 const STATUS_TEXT = {
   visited: "已打卡",
-  wish: "想带你去",
-  todo: "还没去",
+  wish: "想去",
+  todo: "还没去过",
 };
 
+/* ---- 右栏：随机相框 ---- */
+
+function RandomFrame({ pool, onOpenAdmin }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [pool.length]);
+
+  const current = pool[index] || null;
+
+  const shuffle = () => {
+    if (pool.length < 2) return;
+    let next = index;
+    while (next === index) next = Math.floor(Math.random() * pool.length);
+    setIndex(next);
+  };
+
+  return (
+    <article className="tm-latest reveal" style={{ "--i": 2 }}>
+      <div className="tm-latest-head">
+        <span className="tm-latest-label">
+          <UiIcon name="camera" className="tm-latest-cam" />
+          随机相框
+        </span>
+        <button
+          type="button"
+          className="tm-shuffle"
+          onClick={shuffle}
+          disabled={pool.length < 2}
+          aria-label="换一张照片"
+          title="换一张"
+        >
+          <UiIcon name="refresh" />
+        </button>
+      </div>
+
+      <div
+        className="tm-latest-shot"
+        style={{
+          "--tone-a": current?.tone?.[0] || TRAVEL_LATEST.tone[0],
+          "--tone-b": current?.tone?.[1] || TRAVEL_LATEST.tone[1],
+        }}
+      >
+        {current ? (
+          <img src={current.src} alt={current.city} />
+        ) : (
+          <span className="tm-shot-hold">
+            <UiIcon name="camera" className="tm-shot-icon" />
+          </span>
+        )}
+      </div>
+
+      <div className="tm-latest-body">
+        <h3>
+          <UiIcon name="pin" className="tm-latest-pin" />
+          {current?.city || TRAVEL_LATEST.city}
+        </h3>
+        {current?.date && <p className="tm-date">{current.date}</p>}
+        <p className="tm-note">{current?.note || TRAVEL_LATEST.note}</p>
+        {pool.length === 0 && (
+          <button
+            type="button"
+            className="tm-latest-link"
+            onClick={onOpenAdmin}
+          >
+            去照片管理添加第一张
+          </button>
+        )}
+      </div>
+    </article>
+  );
+}
+
+/* ---- 右栏：省份影集 ---- */
+
+function ProvinceAlbum({ province, album, onClose, onOpenAdmin }) {
+  const [preview, setPreview] = useState(album?.cover ?? 0);
+
+  if (!album) {
+    return (
+      <article className="tm-latest reveal" style={{ "--i": 2 }}>
+        <div className="tm-latest-head">
+          <span className="tm-latest-label">
+            <UiIcon name="pin" className="tm-latest-cam" />
+            {province.name}
+            <em className="tm-status-pill is-todo">还没有照片</em>
+          </span>
+          <button
+            type="button"
+            className="tm-shuffle"
+            onClick={onClose}
+            aria-label="关闭省份影集"
+          >
+            ×
+          </button>
+        </div>
+        <div className="tm-album-empty">
+          <UiIcon name="camera" />
+          <p>这个省份还没有照片。</p>
+          <button
+            type="button"
+            className="tm-latest-link"
+            onClick={onOpenAdmin}
+          >
+            去添加照片
+          </button>
+        </div>
+      </article>
+    );
+  }
+
+  const src = album.photos[preview] || album.photos[0];
+
+  return (
+    <article className="tm-latest reveal" style={{ "--i": 2 }}>
+      <div className="tm-latest-head">
+        <span className="tm-latest-label">
+          <UiIcon name="pin" className="tm-latest-cam" />
+          {province.name}
+          <em className={`tm-status-pill is-${province.status}`}>
+            {STATUS_TEXT[province.status]}
+          </em>
+        </span>
+        <button
+          type="button"
+          className="tm-shuffle"
+          onClick={onClose}
+          aria-label="关闭省份影集"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="tm-latest-shot tm-album-shot">
+        <img src={src} alt={`${province.name} 的照片`} />
+        {album.photos.length > 1 && (
+          <span className="tm-album-count">
+            {preview + 1} / {album.photos.length}
+          </span>
+        )}
+      </div>
+
+      {album.photos.length > 1 && (
+        <div className="tm-album-thumbs">
+          {album.photos.map((photo, i) => (
+            <button
+              key={`${photo.slice(-24)}-${i}`}
+              type="button"
+              className={`tm-album-thumb ${i === preview ? "is-active" : ""}`}
+              onClick={() => setPreview(i)}
+              aria-label={`查看第 ${i + 1} 张照片`}
+            >
+              <img src={photo} alt="" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="tm-latest-body">
+        <p className="tm-note">
+          {album.caption || "给这个省份写一句配文，会更好看。"}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+/* ---- 主页面 ---- */
+
 export default function TravelMap({ onNavigate }) {
+  const wrapRef = useRef(null);
+  const dragRef = useRef(null);
+  const movedRef = useRef(false);
   const [geo, setGeo] = useState(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [hovered, setHovered] = useState(null);
+  const [selectedName, setSelectedName] = useState(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
   // 本机浏览器里保存的照片配置（照片管理页写入），默认空对象
   const [localConfig, setLocalConfig] = useState(() => readTravelConfig());
 
@@ -53,24 +241,27 @@ export default function TravelMap({ onNavigate }) {
   }, []);
 
   // 本地配置优先，没配置的省份仍用 data.js 里的默认照片表
-  const provincePhotos = useMemo(
-    () => ({ ...TRAVEL_PHOTOS, ...(localConfig.provinces || {}) }),
+  const provincePhotos = useMemo(() => {
+    const merged = { ...TRAVEL_PHOTOS };
+    Object.entries(localConfig.provinces || {}).forEach(([name, entry]) => {
+      merged[name] = entry;
+    });
+    return merged;
+  }, [localConfig]);
+
+  const latestAlbum = useMemo(
+    () => normalizeAlbum(localConfig.latest) || normalizeAlbum(TRAVEL_LATEST),
     [localConfig],
   );
 
-  const latest = useMemo(
-    () => ({ ...TRAVEL_LATEST, ...(localConfig.latest || {}) }),
-    [localConfig],
-  );
-
-  const recent = useMemo(
-    () =>
-      TRAVEL_RECENT.map((item) => {
-        const local = localConfig.recent?.[item.id];
-        return local?.src ? { ...item, src: local.src } : item;
-      }),
-    [localConfig],
-  );
+  const recentAlbums = useMemo(() => {
+    const merged = {};
+    TRAVEL_RECENT.forEach((item) => {
+      const album = normalizeAlbum(localConfig.recent?.[item.id]);
+      if (album) merged[item.id] = album;
+    });
+    return merged;
+  }, [localConfig]);
 
   useEffect(() => {
     let alive = true;
@@ -105,12 +296,18 @@ export default function TravelMap({ onNavigate }) {
 
   const provinces = useMemo(() => {
     if (!geo) return [];
-    return geo.provinces.map((province) => ({
-      ...province,
-      status: "todo",
-      ...(statusMap.get(province.name) || {}),
-    }));
-  }, [geo, statusMap]);
+    return geo.provinces.map((province) => {
+      const base = { status: "todo", ...(statusMap.get(province.name) || {}) };
+      // 配了照片就算去过：管理页加了照片就点亮，不用再改 data.js 的名单
+      const lit = Boolean(albumCover(provincePhotos[province.name]));
+      return {
+        ...province,
+        ...base,
+        status: lit ? "visited" : base.status,
+        toneIndex: base.toneIndex ?? 0,
+      };
+    });
+  }, [geo, statusMap, provincePhotos]);
 
   // 统计数字直接从地图数据里数，永远和地图对得上
   const stats = useMemo(() => {
@@ -118,13 +315,128 @@ export default function TravelMap({ onNavigate }) {
     provinces.forEach((province) => {
       acc[province.status] += 1;
     });
-    return acc;
+    return { ...acc, total: provinces.length };
   }, [provinces]);
 
+  const selected = useMemo(
+    () => provinces.find((province) => province.name === selectedName) || null,
+    [provinces, selectedName],
+  );
+
   const photoProvinces = useMemo(
-    () => provinces.filter((province) => provincePhotos[province.name]?.src),
+    () =>
+      provinces.filter((province) => albumCover(provincePhotos[province.name])),
     [provinces, provincePhotos],
   );
+
+  // 随机相框的照片池：大图卡 + 各省级影集 + 最近足迹，按图片去重
+  const photoPool = useMemo(() => {
+    const pool = [];
+    const seen = new Set();
+    const push = (entry, meta) => {
+      albumPhotos(entry).forEach((src) => {
+        if (seen.has(src)) return;
+        seen.add(src);
+        pool.push({ src, ...meta });
+      });
+    };
+
+    push(latestAlbum, {
+      city: TRAVEL_LATEST.city,
+      date: TRAVEL_LATEST.date,
+      note: TRAVEL_LATEST.note,
+      tone: TRAVEL_LATEST.tone,
+    });
+
+    Object.entries(provincePhotos).forEach(([name, entry]) => {
+      const album = normalizeAlbum(entry);
+      push(album, {
+        city: name,
+        date: "",
+        note: album?.caption || `${name} · 旅途片段`,
+      });
+    });
+
+    TRAVEL_RECENT.forEach((item) => {
+      if (!recentAlbums[item.id]) return;
+      push(recentAlbums[item.id], {
+        city: item.city,
+        date: item.date,
+        note: "",
+        tone: item.tone,
+      });
+    });
+
+    return pool;
+  }, [latestAlbum, provincePhotos, recentAlbums]);
+
+  /* ---- 缩放 / 拖拽 ---- */
+
+  const limitPan = useCallback((nextPan, nextZoom) => {
+    const rect = wrapRef.current?.getBoundingClientRect();
+    if (!rect) return nextPan;
+    const maxX = (rect.width * (nextZoom - 1)) / 2;
+    const maxY = (rect.height * (nextZoom - 1)) / 2;
+    return {
+      x: Math.min(Math.max(nextPan.x, -maxX), maxX),
+      y: Math.min(Math.max(nextPan.y, -maxY), maxY),
+    };
+  }, []);
+
+  const applyZoom = (next) => {
+    const value = Math.min(Math.max(next, MIN_ZOOM), MAX_ZOOM);
+    setZoom(value);
+    setPan((current) =>
+      value === MIN_ZOOM ? { x: 0, y: 0 } : limitPan(current, value),
+    );
+  };
+
+  const resetView = () => {
+    setZoom(MIN_ZOOM);
+    setPan({ x: 0, y: 0 });
+  };
+
+  const handlePointerDown = (event) => {
+    if (event.target.closest("button, input, .tm-nanhai")) return;
+    movedRef.current = false;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startPan: pan,
+    };
+    setDragging(true);
+  };
+
+  const handlePointerMove = (event) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || zoom <= MIN_ZOOM) return;
+
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (Math.abs(dx) + Math.abs(dy) > 5) movedRef.current = true;
+
+    setPan(
+      limitPan({ x: drag.startPan.x + dx, y: drag.startPan.y + dy }, zoom),
+    );
+  };
+
+  const handlePointerEnd = (event) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null;
+    }
+    setDragging(false);
+  };
+
+  const pickProvince = (province) => {
+    if (movedRef.current) {
+      movedRef.current = false;
+      return;
+    }
+    setSelectedName((current) =>
+      current === province.name ? null : province.name,
+    );
+  };
 
   const renderMap = () => {
     if (loadFailed) {
@@ -166,6 +478,7 @@ export default function TravelMap({ onNavigate }) {
               );
             })}
 
+            {/* 已打卡省份的底色梯度 */}
             {photoProvinces.map((province) => (
               <pattern
                 key={province.name}
@@ -176,23 +489,51 @@ export default function TravelMap({ onNavigate }) {
                 height="1"
               >
                 <image
-                  href={provincePhotos[province.name].src}
+                  href={albumCover(provincePhotos[province.name])}
                   preserveAspectRatio="xMidYMid slice"
                   width="1"
                   height="1"
                 />
               </pattern>
             ))}
+
+            {/* 柔和粉色辉光（对齐 map-of-us-template 的 visitedGlow） */}
+            <filter
+              id="tmVisitedGlow"
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
+              <feGaussianBlur stdDeviation="4" result="tmBlur" />
+              <feFlood floodColor="#e8b8c2" floodOpacity="0.36" />
+              <feComposite in2="tmBlur" operator="in" />
+              <feMerge>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            {/* 奶油纸纹：叠在没有照片的已打卡省份上，避免色块发闷 */}
+            <pattern
+              id="tmSoftTexture"
+              width="8"
+              height="8"
+              patternUnits="userSpaceOnUse"
+            >
+              <path d="M0 0h2v2H0z" fill="#fafbf7" opacity="0.26" />
+              <path d="M5 5h1.5v1.5H5z" fill="#a8c8dc" opacity="0.08" />
+            </pattern>
           </defs>
 
           <g className="tm-lands">
             {provinces.map((province) => {
-              const isPhoto = Boolean(provincePhotos[province.name]?.src);
+              const cover = albumCover(provincePhotos[province.name]);
               const fill =
                 province.status === "visited"
-                  ? isPhoto
+                  ? cover
                     ? `url(#tmPhoto${province.name})`
-                    : `url(#tmTone${province.toneIndex})`
+                    : `url(#tmTone${province.toneIndex ?? 0})`
                   : undefined;
 
               return (
@@ -200,7 +541,7 @@ export default function TravelMap({ onNavigate }) {
                   key={province.name}
                   className={`tm-prov is-${province.status} ${
                     hovered?.name === province.name ? "is-hover" : ""
-                  }`}
+                  } ${selectedName === province.name ? "is-selected" : ""}`}
                   d={province.d}
                   style={fill ? { fill } : undefined}
                   onMouseEnter={() =>
@@ -211,24 +552,32 @@ export default function TravelMap({ onNavigate }) {
                     })
                   }
                   onMouseLeave={() => setHovered(null)}
+                  onClick={() => pickProvince(province)}
                 />
               );
             })}
           </g>
-        </svg>
 
-        {geo.nanhai && (
-          <figure className="tm-nanhai">
-            <svg
-              viewBox={geo.nanhai.viewBox}
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d={geo.nanhai.d} />
-            </svg>
-            <figcaption>南海诸岛</figcaption>
-          </figure>
-        )}
+          {/* 奶油纸纹：叠在没有照片的已打卡省份上，避免大色块发闷（对齐参考项目 softPixelTexture） */}
+          <g aria-hidden="true" pointerEvents="none">
+            {provinces
+              .filter(
+                (province) =>
+                  province.status === "visited" &&
+                  !albumCover(provincePhotos[province.name]),
+              )
+              .map((province) => (
+                <path
+                  key={`texture-${province.name}`}
+                  d={province.d}
+                  fill="url(#tmSoftTexture)"
+                  stroke="#fafbf7"
+                  strokeOpacity="0.9"
+                  strokeWidth="1"
+                />
+              ))}
+          </g>
+        </svg>
 
         {hovered?.center && (
           <span
@@ -246,6 +595,8 @@ export default function TravelMap({ onNavigate }) {
     );
   };
 
+  const zoomPercent = Math.round(zoom * 100);
+
   return (
     <div className="page-shell tm-page">
       <header className="tm-head reveal" style={{ "--i": 0 }}>
@@ -258,79 +609,145 @@ export default function TravelMap({ onNavigate }) {
 
       <div className="tm-grid">
         <section className="tm-map-col reveal" style={{ "--i": 1 }}>
-          <div className="tm-map-wrap">{renderMap()}</div>
+          <div
+            className={`tm-map-wrap ${dragging ? "is-dragging" : ""} ${
+              zoom > MIN_ZOOM ? "is-zoomed" : ""
+            }`}
+            ref={wrapRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerEnd}
+            onPointerCancel={handlePointerEnd}
+          >
+            <div
+              className="tm-map-canvas"
+              style={{
+                transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+              }}
+            >
+              {renderMap()}
+            </div>
 
-          <ul className="tm-stats">
-            <li className="tm-stat is-visited">
-              <span className="tm-dot" aria-hidden="true" />
-              <span className="tm-stat-label">我们去过的地方</span>
-              <strong>{stats.visited}</strong>
-            </li>
-            <li className="tm-stat is-wish">
-              <span className="tm-dot" aria-hidden="true" />
-              <span className="tm-stat-label">想带你去的地方</span>
-              <strong>{stats.wish}</strong>
-            </li>
-            <li className="tm-stat is-todo">
-              <span className="tm-dot" aria-hidden="true" />
-              <span className="tm-stat-label">还没去的地方</span>
-              <strong>{stats.todo}</strong>
-            </li>
-          </ul>
+            {geo?.nanhai && (
+              <figure className="tm-nanhai">
+                <svg
+                  viewBox={geo.nanhai.viewBox}
+                  role="img"
+                  aria-label="南海诸岛"
+                >
+                  <path d={geo.nanhai.d} />
+                </svg>
+                <figcaption>南海诸岛</figcaption>
+              </figure>
+            )}
+
+            <div className="tm-tools" role="group" aria-label="地图缩放">
+              <button
+                type="button"
+                className="tm-tool-btn"
+                onClick={() => applyZoom(zoom + ZOOM_STEP)}
+                disabled={zoom >= MAX_ZOOM}
+                aria-label="放大地图"
+              >
+                <UiIcon name="plus" className="tm-tool-ico" />
+              </button>
+              <span className="tm-tool-pct">{zoomPercent}%</span>
+              <button
+                type="button"
+                className="tm-tool-btn"
+                onClick={() => applyZoom(zoom - ZOOM_STEP)}
+                disabled={zoom <= MIN_ZOOM}
+                aria-label="缩小地图"
+              >
+                <UiIcon name="minus" className="tm-tool-ico" />
+              </button>
+              <button
+                type="button"
+                className="tm-tool-btn is-reset"
+                onClick={resetView}
+                disabled={zoom === MIN_ZOOM && pan.x === 0 && pan.y === 0}
+                aria-label="复位地图"
+              >
+                <UiIcon name="reset" className="tm-tool-ico" />
+              </button>
+            </div>
+
+            <ul className="tm-legend">
+              <li className="tm-stat is-visited">
+                <span className="tm-dot" aria-hidden="true" />
+                <span className="tm-stat-label">我们去过</span>
+                <strong>{stats.visited}</strong>
+              </li>
+              <li className="tm-stat is-wish">
+                <span className="tm-dot" aria-hidden="true" />
+                <span className="tm-stat-label">想去</span>
+                <strong>{stats.wish}</strong>
+              </li>
+              <li className="tm-stat is-todo">
+                <span className="tm-dot" aria-hidden="true" />
+                <span className="tm-stat-label">还没去</span>
+                <strong>{stats.todo}</strong>
+              </li>
+              <li className="tm-progress" aria-hidden="true">
+                <span
+                  className="tm-progress-fill"
+                  style={{
+                    width: `${
+                      stats.total
+                        ? Math.round((stats.visited / stats.total) * 100)
+                        : 0
+                    }%`,
+                  }}
+                />
+              </li>
+            </ul>
+          </div>
         </section>
 
         <aside className="tm-side">
-          <article className="tm-latest reveal" style={{ "--i": 2 }}>
-            <div
-              className="tm-latest-shot"
-              style={{
-                "--tone-a": latest.tone[0],
-                "--tone-b": latest.tone[1],
-              }}
-            >
-              {latest.src ? (
-                <img src={latest.src} alt={latest.city} />
-              ) : (
-                <span className="tm-shot-hold">
-                  <UiIcon name="camera" className="tm-shot-icon" />
-                </span>
-              )}
-            </div>
-            <div className="tm-latest-body">
-              <h3>
-                <UiIcon name="pin" className="tm-latest-pin" />
-                {latest.city}
-              </h3>
-              <p className="tm-date">{latest.date}</p>
-              <p className="tm-note">{latest.note}</p>
-            </div>
-          </article>
+          {selected ? (
+            <ProvinceAlbum
+              key={selected.name}
+              province={selected}
+              album={normalizeAlbum(provincePhotos[selected.name])}
+              onClose={() => setSelectedName(null)}
+              onOpenAdmin={() => onNavigate?.("travel-admin")}
+            />
+          ) : (
+            <RandomFrame
+              pool={photoPool}
+              onOpenAdmin={() => onNavigate?.("travel-admin")}
+            />
+          )}
 
           <section className="tm-recent reveal" style={{ "--i": 3 }}>
             <header className="tm-recent-head">
               <h4>最近足迹</h4>
-              <span className="tm-recent-more">查看全部</span>
+              <span className="tm-recent-more">看看有没有落下的地方</span>
             </header>
             <ul className="tm-recent-list">
-              {recent.map((item) => (
-                <li key={item.id} className="tm-recent-item">
-                  <span
-                    className="tm-thumb"
-                    style={{
-                      "--tone-a": item.tone[0],
-                      "--tone-b": item.tone[1],
-                    }}
-                  >
-                    {item.src ? (
-                      <img src={item.src} alt={item.city} loading="lazy" />
-                    ) : null}
-                  </span>
-                  <div className="tm-recent-text">
-                    <strong>{item.city}</strong>
-                    <em>{item.date}</em>
-                  </div>
-                </li>
-              ))}
+              {TRAVEL_RECENT.map((item) => {
+                const cover = albumCover(recentAlbums[item.id]);
+                return (
+                  <li key={item.id} className="tm-recent-item">
+                    <span
+                      className="tm-thumb"
+                      style={{
+                        "--tone-a": item.tone[0],
+                        "--tone-b": item.tone[1],
+                      }}
+                    >
+                      {cover ? (
+                        <img src={cover} alt={item.city} loading="lazy" />
+                      ) : null}
+                    </span>
+                    <div className="tm-recent-text">
+                      <strong>{item.city}</strong>
+                      <em>{item.date}</em>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         </aside>
