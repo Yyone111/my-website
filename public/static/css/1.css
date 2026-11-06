@@ -6556,6 +6556,114 @@ body.dark-mode .line-hold::before,
   text-decoration: underline;
 }
 
+/* ---- 随机相框卡片升级（对齐 map-of-us-template 的照片卡排版） ---- */
+.tm-latest.is-frame {
+  transition:
+    transform 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.tm-latest.is-frame:hover {
+  transform: translateY(-3px);
+  border-color: rgba(245, 220, 224, 0.85);
+}
+
+.tm-latest-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tm-latest-sub {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--tm-ink-faint);
+}
+
+/* 照片底部渐变遮罩，压住高光让文字层级更清晰 */
+.tm-shot-shade {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 58%;
+  background: linear-gradient(
+    to top,
+    rgba(52, 68, 81, 0.34),
+    rgba(52, 68, 81, 0) 78%
+  );
+  pointer-events: none;
+}
+
+.tm-latest.is-frame .tm-latest-shot img {
+  transition: transform 0.5s ease;
+}
+
+.tm-latest.is-frame:hover .tm-latest-shot img {
+  transform: scale(1.04);
+}
+
+.tm-frame-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.tm-frame-chip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid rgba(168, 200, 220, 0.55);
+  background: rgba(168, 200, 220, 0.22);
+  color: var(--tm-sky);
+}
+
+.tm-frame-chip svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tm-frame-cityline {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tm-frame-cityline h3 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tm-ink);
+}
+
+.tm-frame-date {
+  flex: none;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--tm-ink-faint);
+}
+
+.tm-frame-note {
+  margin: 9px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--tm-ink-soft);
+}
+
 /* ---- 省份影集 ---- */
 .tm-album-shot {
   aspect-ratio: 4 / 3;
@@ -7410,6 +7518,88 @@ body.dark-mode .tm-map-skeleton,
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
+}
+
+.ta-upload-note {
+  margin-left: auto;
+  max-width: 200px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ta-ink-faint);
+}
+
+/* ---- 图床连接面板（配置了 Supabase 时出现） ---- */
+.ta-auth {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fbf6f7, #f6edf0);
+  border: 1px solid var(--ta-line);
+}
+
+.ta-auth.is-ready {
+  background: linear-gradient(135deg, #eef6fb, #e4eef7);
+}
+
+.ta-auth-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.ta-auth-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ta-ink-faint);
+}
+
+.ta-auth-dot.is-on {
+  background: #8fb8d4;
+  box-shadow: 0 0 0 3px rgba(168, 200, 220, 0.28);
+}
+
+.ta-auth-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ta-ink);
+}
+
+.ta-auth-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ta-ink-faint);
+}
+
+.ta-auth-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 260px;
+}
+
+.ta-auth-form .ta-input {
+  flex: 1 1 130px;
+}
+
+.ta-auth-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: #b04a4a;
 }
 
 /* ---- 已有图片库 ---- */

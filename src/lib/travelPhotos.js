@@ -176,11 +176,10 @@ const loadImage = (file) =>
   });
 
 /**
- * 把用户选的文件压成 dataURL。
- * 按最长边等比缩放，并先铺一层白底再转 JPEG —— 否则 PNG 的透明区域会变成黑块。
- * 返回体积足够小、能塞进 localStorage 的字符串。
+ * 压缩图片的公共管线：按最长边等比缩放，先铺白底再转 JPEG（否则 PNG 的透明区域会变成黑块）。
+ * 返回能塞给 <img> / 上传接口的 Blob。
  */
-export async function compressImageFile(file, options = {}) {
+async function compressedImageBlob(file, options = {}) {
   const { maxDimension = 1000, quality = 0.68 } = options;
 
   if (!file.type.startsWith("image/")) {
@@ -206,13 +205,31 @@ export async function compressImageFile(file, options = {}) {
   const blob = await new Promise((resolve) =>
     canvas.toBlob(resolve, "image/jpeg", quality),
   );
-  const dataUrl = blob ? await readAsDataUrl(blob) : canvas.toDataURL("image/jpeg", quality);
+  if (!blob) throw new Error("图片压缩失败，请换一张试试。");
+  return blob;
+}
+
+/**
+ * 把用户选的文件压成 dataURL（localStorage 路径用）。
+ * 返回体积足够小、能塞进 localStorage 的字符串。
+ */
+export async function compressImageFile(file, options = {}) {
+  const blob = await compressedImageBlob(file, options);
+  const dataUrl = await readAsDataUrl(blob);
 
   if (dataUrl.length > MAX_BYTES) {
     throw new Error("图片压缩后仍然太大，请换一张更小的。");
   }
 
   return dataUrl;
+}
+
+/**
+ * 把用户选的文件压成 Blob（外部图床路径用，如 Supabase）。
+ * 与 compressImageFile 同一套压缩质量，但不做 localStorage 的体积校验。
+ */
+export async function compressImageToBlob(file, options = {}) {
+  return compressedImageBlob(file, options);
 }
 
 /**

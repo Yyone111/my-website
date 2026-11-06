@@ -12,6 +12,7 @@ import {
   EMPTY_TRAVEL_CONFIG,
   TRAVEL_PHOTOS_EVENT,
   compressImageFiles,
+  compressImageToBlob,
   isAdminUnlocked,
   normalizeAlbum,
   readTravelConfig,
@@ -19,14 +20,22 @@ import {
   setAdminUnlocked,
   writeTravelConfig,
 } from "../lib/travelPhotos";
+import {
+  getStorageSession,
+  isSupabaseConfigured,
+  signInToStorage,
+  signOutStorage,
+  uploadPhoto,
+} from "../lib/supabaseClient";
 
 /**
  * 旅行照片管理页（#/travel-admin）
  * - 进入需输入密码，解锁状态只在当前标签页的 session 里有效
  * - 每个位置都是一个「影集」：可以放多张照片，并指定其中一张作为封面
  * - 封面决定地图省份的拼贴、最近足迹的缩略图
- * - 照片支持本地上传（多选，压缩成 dataURL）或填写图片链接 / 项目内路径
- * - 配置存 localStorage，只本机生效
+ * - 照片支持本地上传（多选，压缩）或填写图片链接 / 项目内路径
+ * - 配置了 Supabase（VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY）时，上传的图片会直传公开桶，
+ *   保存其公开链接；未配置时沿用旧行为：压成 dataURL 存 localStorage，只本机生效
  *
  * 注意：这是纯前端密码，只能挡住误入的访客，不能防住会看源码的人。
  * 真正敏感的数据应放在服务端校验。
@@ -91,15 +100,39 @@ function AlbumField({ album, onChange, hint, withCaption }) {
     setBusy(true);
     setError("");
     try {
-      const { ok, failed } = await compressImageFiles(files, {
-        maxDimension: 1000,
-        quality: 0.68,
-      });
-      if (ok.length > 0) {
-        patch({ photos: [...photos, ...ok] });
-      }
-      if (failed.length > 0) {
-        setError(`有 ${failed.length} 张没处理成功：${failed[0]}`);
+      if (isSupabaseConfigured()) {
+        // 外部图床：逐张压缩成 Blob 直传 Supabase，拿到公开链接存进影集（链接对部署站所有人可见）
+        const ok = [];
+        const failed = [];
+        for (const file of files) {
+          try {
+            const blob = await compressImageToBlob(file, {
+              maxDimension: 1000,
+              quality: 0.68,
+            });
+            ok.push(await uploadPhoto(blob, file.name));
+          } catch (error) {
+            failed.push(`${file.name}：${error.message || "处理失败"}`);
+          }
+        }
+        if (ok.length > 0) {
+          patch({ photos: [...photos, ...ok] });
+        }
+        if (failed.length > 0) {
+          setError(`有 ${failed.length} 张没传上去：${failed[0]}`);
+        }
+      } else {
+        // 本地存储：压成 dataURL 存 localStorage（原有行为）
+        const { ok, failed } = await compressImageFiles(files, {
+          maxDimension: 1000,
+          quality: 0.68,
+        });
+        if (ok.length > 0) {
+          patch({ photos: [...photos, ...ok] });
+        }
+        if (failed.length > 0) {
+          setError(`有 ${failed.length} 张没处理成功：${failed[0]}`);
+        }
       }
     } finally {
       setBusy(false);
@@ -192,6 +225,11 @@ function AlbumField({ album, onChange, hint, withCaption }) {
           >
             清空这组
           </button>
+        )}
+        {isSupabaseConfigured() && (
+          <span className="ta-upload-note">
+            已启用图床：登录后上传即发布公开链接，对部署站的所有访客可见
+          </span>
         )}
       </div>
 
@@ -291,6 +329,111 @@ function PasswordGate({ onUnlock }) {
           密码校验在前端完成，只用于挡住误入的访客，不能替代服务端鉴权。
         </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * 图床连接面板：配置了 Supabase 时才出现。
+ * 未登录时无法上传到图床（uploadPhoto 会报错），登录一次后会话在本机持久化。
+ */
+function SupabaseAccount() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [user, setUser] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    getStorageSession()
+      .then((session) => {
+        if (alive && session) setUser(session.user?.email || null);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const connect = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const account = await signInToStorage(email, password);
+      setUser(account);
+      setPassword("");
+    } catch (cause) {
+      setError(cause.message || "连接失败");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disconnect = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await signOutStorage();
+      setUser(null);
+    } catch (cause) {
+      setError(cause.message || "断开失败");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={`ta-auth ${user ? "is-ready" : ""}`}>
+      <div className="ta-auth-info">
+        <span className={`ta-auth-dot ${user ? "is-on" : ""}`} />
+        <div>
+          <p className="ta-auth-title">
+            {user ? "图床已连接" : "连接图床后再上传"}
+          </p>
+          <p className="ta-auth-sub">
+            {user
+              ? `${user} · 上传的照片会发布为公开链接，访问你的人都能看到`
+              : "照片存到共享图床（访客可见）；未连接时上传不生效"}
+          </p>
+        </div>
+      </div>
+      {user ? (
+        <button
+          type="button"
+          className="ta-btn is-ghost"
+          onClick={disconnect}
+          disabled={busy}
+        >
+          {busy ? "断开中…" : "断开连接"}
+        </button>
+      ) : (
+        <form className="ta-auth-form" onSubmit={connect}>
+          <input
+            type="email"
+            className="ta-input"
+            placeholder="图床邮箱"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+            autoComplete="username"
+          />
+          <input
+            type="password"
+            className="ta-input"
+            placeholder="图床密码"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            autoComplete="current-password"
+          />
+          <button type="submit" className="ta-btn is-primary" disabled={busy}>
+            {busy ? "连接中…" : "连接图床"}
+          </button>
+        </form>
+      )}
+      {error && <p className="ta-auth-error">{error}</p>}
     </div>
   );
 }
@@ -404,6 +547,8 @@ export default function TravelAdmin() {
           锁定退出
         </button>
       </header>
+
+      {isSupabaseConfigured() && <SupabaseAccount />}
 
       <div className="ta-tabs">
         {TABS.map((item) => (

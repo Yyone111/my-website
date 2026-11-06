@@ -65,11 +65,14 @@ function RandomFrame({ pool, onOpenAdmin }) {
   };
 
   return (
-    <article className="tm-latest reveal" style={{ "--i": 2 }}>
+    <article className="tm-latest is-frame reveal" style={{ "--i": 2 }}>
       <div className="tm-latest-head">
         <span className="tm-latest-label">
           <UiIcon name="camera" className="tm-latest-cam" />
-          随机相框
+          <span className="tm-latest-titles">
+            随机相框
+            <em className="tm-latest-sub">旅途中随手按下的一张</em>
+          </span>
         </span>
         <button
           type="button"
@@ -91,7 +94,10 @@ function RandomFrame({ pool, onOpenAdmin }) {
         }}
       >
         {current ? (
-          <img src={current.src} alt={current.city} />
+          <>
+            <img src={current.src} alt={current.city} />
+            <span className="tm-shot-shade" aria-hidden="true" />
+          </>
         ) : (
           <span className="tm-shot-hold">
             <UiIcon name="camera" className="tm-shot-icon" />
@@ -100,12 +106,22 @@ function RandomFrame({ pool, onOpenAdmin }) {
       </div>
 
       <div className="tm-latest-body">
-        <h3>
-          <UiIcon name="pin" className="tm-latest-pin" />
-          {current?.city || TRAVEL_LATEST.city}
-        </h3>
-        {current?.date && <p className="tm-date">{current.date}</p>}
-        <p className="tm-note">{current?.note || TRAVEL_LATEST.note}</p>
+        <div className="tm-frame-meta">
+          <span className="tm-frame-chip">
+            <UiIcon name="pin" />
+          </span>
+          <div className="tm-frame-cityline">
+            <h3>{current?.city || TRAVEL_LATEST.city}</h3>
+            {(current?.date || TRAVEL_LATEST.date) && (
+              <span className="tm-frame-date">
+                {current?.date || TRAVEL_LATEST.date}
+              </span>
+            )}
+          </div>
+        </div>
+        {(current?.note || TRAVEL_LATEST.note) && (
+          <p className="tm-frame-note">{current?.note || TRAVEL_LATEST.note}</p>
+        )}
         {pool.length === 0 && (
           <button
             type="button"
