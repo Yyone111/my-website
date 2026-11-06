@@ -14,10 +14,11 @@ npm run build   # 生产构建
 
 照片（地图省份拼贴、随机相框、最近足迹）支持两种存储方式，二选一，不影响其它页面：
 
-| 模式                 | 照片存在哪          | 谁能看到         | 何时使用                                       |
-| -------------------- | ------------------- | ---------------- | ---------------------------------------------- |
-| **本机模式（默认）** | 浏览器 localStorage | 只有你这台设备   | 未配置 Supabase 时自动使用；私密照片请用本模式 |
-| **图床模式**         | Supabase 公开桶     | 所有知道链接的人 | 想让自己上传的照片对访客可见时启用             |
+| 模式                 | 照片存在哪                             | 谁能看到                   | 何时使用                                                        |
+| -------------------- | -------------------------------------- | -------------------------- | --------------------------------------------------------------- |
+| **本机模式（默认）** | 浏览器 localStorage                    | 只有你这台设备             | 未配置 Supabase 时自动使用；私密照片请用本模式                  |
+| **图床模式**         | Supabase 公开桶                        | 所有知道链接的人           | 想让自己上传的照片对访客可见时启用                              |
+| **图床 + 共享清单**  | 照片在公开桶，清单在 Supabase Postgres | 全站所有设备、清缓存后仍在 | 完成第 3.5 步建表后即可：你上传一次，任何访客在任何设备都能看到 |
 
 启用图床是**可选**的。不配置 Supabase，站点完全按本机模式运行。
 
@@ -69,7 +70,42 @@ create policy "owner insert" on storage.objects
 -- 删除：作者可删除自己桶里的文件（备用）
 create policy "owner delete" on storage.objects
   for delete to authenticated
-  using (bucket_id = 'travel-photos');
+  using (bucket_id = 'ownwebImages');
+```
+
+### 第 3.5 步：建「共享照片清单」表（可选但强烈建议）
+
+只传图床、不建这张表，照片文件会一直在 Supabase，但"哪张照片贴到哪个省"的清单只存在你浏览器的 localStorage——**清缓存/换设备/别的访客就看不到了**。建了这张表后，管理页保存时会把清单同步到 DB，全站访客都能读到。
+
+SQL Editor 里再执行这一段：
+
+```sql
+create table if not exists public.travel_photos (
+  id bigint generated always as identity primary key,
+  slot_type text not null,          -- 'province' | 'latest' | 'recent'
+  slot_key text not null,           -- 省份名 / 'latest' / 最近足迹 id
+  photos jsonb not null default '[]'::jsonb,
+  cover int not null default 0,
+  caption text not null default '',
+  updated_at timestamptz not null default now(),
+  unique (slot_type, slot_key)
+);
+
+alter table public.travel_photos enable row level security;
+
+-- 读取：任何访客（含匿名）都能读到照片清单
+create policy "travel_photos read" on public.travel_photos
+  for select using (true);
+
+-- 写入：仅登录用户（图床管理员）
+create policy "travel_photos admin insert" on public.travel_photos
+  for insert to authenticated with check (true);
+
+create policy "travel_photos admin update" on public.travel_photos
+  for update to authenticated using (true);
+
+create policy "travel_photos admin delete" on public.travel_photos
+  for delete to authenticated using (true);
 ```
 
 顺带说明：公开桶本身自带"匿名可读"，**无需**再建 select 策略。
@@ -103,15 +139,17 @@ create policy "owner delete" on storage.objects
 
 1. 连接图床后，给任意省份「上传本地图片」；成功后影集里会出现一张图，其地址是
    `https://<项目>.supabase.co/storage/v1/object/public/<你的桶名>/photos/...` 即为成功。
-2. **Render 面板**：服务 → **Environment**，新增变量（值同第 1 步；桶名与第 2 步建的一致时 `VITE_SUPABASE_BUCKET` 不用加，否则按实际桶名填）：
+2. 再做一次「保存」（随便改点东西，如给照片填 caption 再保存）——如果已执行第 3.5 步建表，
+   清单会同步到 `travel_photos` 表：之后刷新地图、换设备、清缓存，照片都还在，访客也能看到。
+3. **Render 面板**：服务 → **Environment**，新增变量（值同第 1 步；桶名与第 2 步建的一致时 `VITE_SUPABASE_BUCKET` 不用加，否则按实际桶名填）：
    ```
    VITE_SUPABASE_URL=...
    VITE_SUPABASE_ANON_KEY=...
    VITE_SUPABASE_BUCKET=...
    ```
    Render 构建时 Vite 会读取这类 `VITE_` 前缀变量并打进产物，不需要提交仓库。
-3. 点 **Deploy / Manual Deploy → Clear build cache & deploy** 重新部署。
-4. 部署完成后访问线上 `#/travel-admin`，同样流程验证一次上传即可。
+4. 点 **Deploy / Manual Deploy → Clear build cache & deploy** 重新部署。
+5. 部署完成后访问线上 `#/travel-admin`，同样流程验证一次上传即可。
 
 > ⚠️ anon public key 与 Project URL 本来就是公开给前端的，提交进 GitHub 也不构成风险；
 > 真正需要保密的只有：Supabase 登录账号密码（不提交）、service_role / JWT 密钥（本项目从未使用）。
@@ -133,6 +171,11 @@ create policy "owner delete" on storage.objects
 
 **上传报 HTTP 40x**
 → 常见原因：桶名不是 `travel-photos`（改代码或改名）；第 3 步策略未执行；上传时未登录。按顺序核对第 2、3 步。
+
+**上传提示「上传被图床权限策略拦下了 / new row violates row-level security policy」**
+→ 1) 上传前页面顶部必须是「图床已连接」（绿色小圆点），先登录再传；
+→ 2) 你实际建的桶名如果不是 `travel-photos`，把第 3 步 SQL 里的 `bucket_id = 'travel-photos'` 改成你的桶名重新执行（如 `'ownweblmages'`）；
+→ 3) 生产（Render）环境变量确认加了 `VITE_SUPABASE_BUCKET=<你的桶名>` 并重新部署；登录时间久了失效时，先「断开连接」再重新「连接图床」。
 
 **图片能上传但加载慢**
 → 图床图像走 Supabase CDN；对个人站免费额度（1GB 存储 + 2GB 传出/月）通常够用。若将来被大量引用消耗流量，再考虑私有桶或 Cloudflare 套缓存。

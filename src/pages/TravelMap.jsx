@@ -14,6 +14,7 @@ import {
   normalizeAlbum,
   readTravelConfig,
 } from "../lib/travelPhotos";
+import { readSharedConfig } from "../lib/supabaseClient";
 
 /**
  * 旅行地图
@@ -245,39 +246,57 @@ export default function TravelMap({ onNavigate }) {
   const [dragging, setDragging] = useState(false);
   // 本机浏览器里保存的照片配置（照片管理页写入），默认空对象
   const [localConfig, setLocalConfig] = useState(() => readTravelConfig());
+  // 全站共享的照片清单（Supabase DB）：优先于本机；未配置图床或读取失败时为 null
+  const [sharedConfig, setSharedConfig] = useState(null);
+
+  const loadShared = useCallback(() => {
+    readSharedConfig().then(setSharedConfig);
+  }, []);
 
   useEffect(() => {
-    const refresh = () => setLocalConfig(readTravelConfig());
+    loadShared();
+  }, [loadShared]);
+
+  useEffect(() => {
+    const refresh = () => {
+      setLocalConfig(readTravelConfig());
+      // 管理页保存会本地 + DB 双写，这里跟着拉一次共享清单
+      loadShared();
+    };
     window.addEventListener(TRAVEL_PHOTOS_EVENT, refresh);
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(TRAVEL_PHOTOS_EVENT, refresh);
       window.removeEventListener("storage", refresh);
     };
-  }, []);
+  }, [loadShared]);
 
-  // 本地配置优先，没配置的省份仍用 data.js 里的默认照片表
+  // 共享清单优先；没拉到共享期间先用本机，两者都没有则用 data.js 默认
+  const resolvedConfig = sharedConfig ?? localConfig;
+
+  // 共享/本地配置优先，没配置的省份仍用 data.js 里的默认照片表
   const provincePhotos = useMemo(() => {
     const merged = { ...TRAVEL_PHOTOS };
-    Object.entries(localConfig.provinces || {}).forEach(([name, entry]) => {
+    Object.entries(resolvedConfig.provinces || {}).forEach(([name, entry]) => {
       merged[name] = entry;
     });
     return merged;
-  }, [localConfig]);
+  }, [resolvedConfig]);
 
   const latestAlbum = useMemo(
-    () => normalizeAlbum(localConfig.latest) || normalizeAlbum(TRAVEL_LATEST),
-    [localConfig],
+    () =>
+      normalizeAlbum(resolvedConfig.latest) || normalizeAlbum(TRAVEL_LATEST),
+    [resolvedConfig],
   );
 
   const recentAlbums = useMemo(() => {
     const merged = {};
     TRAVEL_RECENT.forEach((item) => {
-      const album = normalizeAlbum(localConfig.recent?.[item.id]);
+      const album = normalizeAlbum(resolvedConfig.recent?.[item.id]);
       if (album) merged[item.id] = album;
     });
     return merged;
-  }, [localConfig]);
+  }, [resolvedConfig]);
 
   useEffect(() => {
     let alive = true;

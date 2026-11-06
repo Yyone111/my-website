@@ -23,6 +23,8 @@ import {
 import {
   getStorageSession,
   isSupabaseConfigured,
+  pushSharedConfig,
+  readSharedConfig,
   signInToStorage,
   signOutStorage,
   uploadPhoto,
@@ -449,6 +451,17 @@ export default function TravelAdmin() {
   const [toast, setToast] = useState("");
   const [saveError, setSaveError] = useState("");
 
+  // 打开时优先加载全站共享清单（DB），其它标签/新设备也能拿到；没有则用本机
+  useEffect(() => {
+    let alive = true;
+    readSharedConfig().then((shared) => {
+      if (alive && shared) setConfig(shared);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // 别处（另一个标签页）改了配置就同步过来
   useEffect(() => {
     const refresh = () => setConfig(readTravelConfig());
@@ -466,9 +479,27 @@ export default function TravelAdmin() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const save = (next) => {
+  const save = async (next) => {
     setConfig(next);
     setSaveError("");
+
+    // 已配置图床：先把清单全量同步到共享表（全站访客可见），再写本机。
+    // 未登录时会给提示但本地不受影响。
+    if (isSupabaseConfigured()) {
+      const result = await pushSharedConfig(next);
+      if (!result?.ok) {
+        if (result?.reason === "not-connected") {
+          setSaveError("已保存到本机；登录图床后才会同步给全站访客。");
+        } else if (result?.reason === "not-configured") {
+          // 未配置图床 = 纯本机模式，无需提示
+        } else {
+          setSaveError(
+            `本机已保存，但同步到共享失败：${result?.reason || "请稍后重试"}`,
+          );
+        }
+      }
+    }
+
     try {
       writeTravelConfig(next);
     } catch (error) {
