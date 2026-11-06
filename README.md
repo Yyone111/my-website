@@ -43,7 +43,7 @@ npm run build   # 生产构建
 ### 第 2 步：建公开桶 + 建登录账号
 
 1. 左侧 **Storage → New bucket**：
-   - 名称填：**`travel-photos`**（必须与代码一致）
+   - 名称填：**`travel-photos`**（默认桶名；如果你在建桶时用了其它名字，需在环境变量 `VITE_SUPABASE_BUCKET` 里保持一致，见第 4/5 步）
    - **Public bucket ✔ 勾选**，其余保持默认 → Create。
 2. 左侧 **Authentication → Users → Add new user**：
    - 填你自己的**邮箱 + 密码**（这份文件之后存到你 .env.local 的邮箱登录时用，**密码自己保管，不要提交到任何仓库**）。
@@ -83,11 +83,12 @@ create policy "owner delete" on storage.objects
    Copy-Item .env.local.example .env.local
    ```
 
-2. 打开 `.env.local`，填上第 1 步的两个值（`sb_publishable_...` 这类新格式 publishable key 也可以直接填）：
+2. 打开 `.env.local`，填上第 1 步的两个值（`sb_publishable_...` 这类新格式 publishable key 也可以直接填）；若桶名不是默认的 `travel-photos`，再加一行 `VITE_SUPABASE_BUCKET`：
 
    ```
    VITE_SUPABASE_URL=https://你的项目.supabase.co
    VITE_SUPABASE_ANON_KEY=sb_publishable_你的publishable-key
+   VITE_SUPABASE_BUCKET=ownweblmages   # 可选，默认 travel-photos
    ```
 
 3. **重启 dev server**（`.env` 变更需要重启才生效）：停掉 `npm run dev`，再重新 `npm run dev`。
@@ -101,11 +102,12 @@ create policy "owner delete" on storage.objects
 ### 第 5 步：本地上传一张验证 + Render 部署
 
 1. 连接图床后，给任意省份「上传本地图片」；成功后影集里会出现一张图，其地址是
-   `https://<项目>.supabase.co/storage/v1/object/public/travel-photos/photos/...` 即为成功。
-2. **Render 面板**：服务 → **Environment**，新增两个变量（值同第 1 步）：
+   `https://<项目>.supabase.co/storage/v1/object/public/<你的桶名>/photos/...` 即为成功。
+2. **Render 面板**：服务 → **Environment**，新增变量（值同第 1 步；桶名与第 2 步建的一致时 `VITE_SUPABASE_BUCKET` 不用加，否则按实际桶名填）：
    ```
    VITE_SUPABASE_URL=...
    VITE_SUPABASE_ANON_KEY=...
+   VITE_SUPABASE_BUCKET=...
    ```
    Render 构建时 Vite 会读取这类 `VITE_` 前缀变量并打进产物，不需要提交仓库。
 3. 点 **Deploy / Manual Deploy → Clear build cache & deploy** 重新部署。

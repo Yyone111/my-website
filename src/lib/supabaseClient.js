@@ -9,7 +9,8 @@
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const PHOTO_BUCKET = "travel-photos";
+// 照片桶名可配置；默认 travel-photos，想换桶就在 .env.local / Render 里设 VITE_SUPABASE_BUCKET
+const PHOTO_BUCKET = import.meta.env.VITE_SUPABASE_BUCKET || "ownweblmages";
 
 let client = null;
 
