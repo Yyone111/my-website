@@ -375,7 +375,7 @@ function App() {
       case "travel":
         return <TravelMap onNavigate={navigate} />;
       case "travel-admin":
-        return <TravelAdmin />;
+        return <TravelAdmin onNavigate={navigate} />;
       case "contact":
         return <Contact onOpenQQ={() => setIsModalOpen(true)} />;
       default:
@@ -415,22 +415,78 @@ function App() {
           </button>
 
           <div className="icomat-nav-links">
-            {NAV_ITEMS.filter((item) => !item.hidden).map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className={`icomat-nav-item ${
-                  item.key === "contact" ? "icomat-nav-item-cta" : ""
-                } ${route === item.key ? "is-active" : ""}`}
-                aria-current={route === item.key ? "page" : undefined}
-                onClick={() => navigate(item.key)}
-              >
-                <span className="icomat-nav-text" aria-hidden="true">
-                  <span>{item.label}</span>
-                  <span>{item.label}</span>
-                </span>
-              </button>
-            ))}
+            {NAV_ITEMS.filter((item) => !item.hidden).map((item) =>
+              item.children?.length ? (
+                <div
+                  key={item.key}
+                  className={`icomat-nav-drop ${
+                    route === item.key ||
+                    item.children.some((child) => child.key === route)
+                      ? "is-active-root"
+                      : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    className={`icomat-nav-item is-drop ${
+                      route === item.key ||
+                      item.children.some((child) => child.key === route)
+                        ? "is-active"
+                        : ""
+                    }`}
+                    aria-current={
+                      route === item.key ||
+                      item.children.some((child) => child.key === route)
+                        ? "page"
+                        : undefined
+                    }
+                    onClick={() => navigate(item.key)}
+                  >
+                    <span className="icomat-nav-text" aria-hidden="true">
+                      <span>{item.label}</span>
+                      <span>{item.label}</span>
+                    </span>
+                    <span className="icomat-nav-caret" aria-hidden="true">
+                      ▾
+                    </span>
+                  </button>
+                  <div
+                    className="icomat-nav-drop-panel"
+                    role="menu"
+                    aria-label={`${item.label}子菜单`}
+                  >
+                    {item.children.map((child) => (
+                      <button
+                        key={child.key}
+                        type="button"
+                        role="menuitem"
+                        className={`icomat-nav-drop-item ${
+                          route === child.key ? "is-active" : ""
+                        }`}
+                        onClick={() => navigate(child.key)}
+                      >
+                        {child.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`icomat-nav-item ${
+                    item.key === "contact" ? "icomat-nav-item-cta" : ""
+                  } ${route === item.key ? "is-active" : ""}`}
+                  aria-current={route === item.key ? "page" : undefined}
+                  onClick={() => navigate(item.key)}
+                >
+                  <span className="icomat-nav-text" aria-hidden="true">
+                    <span>{item.label}</span>
+                    <span>{item.label}</span>
+                  </span>
+                </button>
+              ),
+            )}
           </div>
         </nav>
       </div>

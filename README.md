@@ -87,9 +87,13 @@ create table if not exists public.travel_photos (
   photos jsonb not null default '[]'::jsonb,
   cover int not null default 0,
   caption text not null default '',
+  date text not null default '',    -- 拍摄时间（可选），最近足迹按它排序
   updated_at timestamptz not null default now(),
   unique (slot_type, slot_key)
 );
+
+-- 已经建过这张表的只跑下面这一句补列即可：
+-- alter table public.travel_photos add column if not exists date text not null default '';
 
 alter table public.travel_photos enable row level security;
 

@@ -74,9 +74,9 @@ function ImageChip({ src, label, onUse, active }) {
 
 /**
  * 一个影集位置的照片编辑器。
- * album 为 { photos, cover, caption }，没配过时传 null。
+ * album 为 { photos, cover, caption, date }，没配过时传 null。
  */
-function AlbumField({ album, onChange, hint, withCaption }) {
+function AlbumField({ album, onChange, hint, withCaption, withDate }) {
   const fileRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -90,6 +90,7 @@ function AlbumField({ album, onChange, hint, withCaption }) {
       photos: next.photos ?? photos,
       cover: next.cover ?? cover,
       caption: next.caption ?? album?.caption ?? "",
+      date: next.date ?? album?.date ?? "",
     };
     onChange(merged.photos.length > 0 ? merged : null);
   };
@@ -159,6 +160,7 @@ function AlbumField({ album, onChange, hint, withCaption }) {
             photos: nextPhotos,
             cover: nextCover,
             caption: album?.caption || "",
+            date: album?.date || "",
           }
         : null,
     );
@@ -276,6 +278,19 @@ function AlbumField({ album, onChange, hint, withCaption }) {
           value={album?.caption || ""}
           onChange={(event) => patch({ caption: event.target.value })}
         />
+      )}
+
+      {withDate && (
+        <label className="ta-date-row">
+          <span className="ta-date-label">时间</span>
+          <input
+            type="date"
+            className="ta-input"
+            value={album?.date || ""}
+            onChange={(event) => patch({ date: event.target.value })}
+          />
+          <em>这组照片的拍摄时间（可选）。最近足迹会按它排序。</em>
+        </label>
       )}
 
       {error && <p className="ta-error">{error}</p>}
@@ -442,7 +457,7 @@ function SupabaseAccount() {
 
 /* ---- 主页面 ---- */
 
-export default function TravelAdmin() {
+export default function TravelAdmin({ onNavigate }) {
   const [unlocked, setUnlocked] = useState(() => isAdminUnlocked());
   const [tab, setTab] = useState("provinces");
   const [config, setConfig] = useState(() => readTravelConfig());
@@ -564,7 +579,9 @@ export default function TravelAdmin() {
           <p className="ta-kicker">TRAVEL PHOTO ADMIN</p>
           <h2 className="ta-title">旅行照片管理</h2>
           <p className="ta-sub">
-            配置会保存在这台设备的浏览器里，你自己看到效果，访客仍看到代码里的默认值。
+            在这里配置各处的照片和拍摄时间，保存后立即可在旅行地图看到；
+            连接图床并登录后，清单与图片会上传到
+            Supabase，任何访客、任何设备都能看到。
           </p>
         </div>
         <button
@@ -573,9 +590,10 @@ export default function TravelAdmin() {
           onClick={() => {
             setAdminUnlocked(false);
             setUnlocked(false);
+            onNavigate?.("travel");
           }}
         >
-          锁定退出
+          锁定并退出
         </button>
       </header>
 
@@ -639,6 +657,7 @@ export default function TravelAdmin() {
             onChange={(album) => setProvince(activeProvince, album)}
             hint={`正在配置：${activeProvince}`}
             withCaption
+            withDate
           />
 
           <div className="ta-library">
@@ -658,6 +677,7 @@ export default function TravelAdmin() {
                     const photos = current?.photos || [];
                     if (photos.includes(src)) return;
                     setProvince(activeProvince, {
+                      ...(current || {}),
                       photos: [...photos, src],
                       cover: current?.cover ?? 0,
                       caption: current?.caption || item.label,
@@ -681,6 +701,7 @@ export default function TravelAdmin() {
             album={normalizeAlbum(config.latest)}
             onChange={setLatest}
             hint={`当前：${TRAVEL_LATEST.city} · ${TRAVEL_LATEST.date}`}
+            withDate
           />
 
           <div className="ta-library">
@@ -696,9 +717,10 @@ export default function TravelAdmin() {
                     const photos = current?.photos || [];
                     if (photos.includes(src)) return;
                     setLatest({
+                      ...(current || {}),
                       photos: [...photos, src],
                       cover: current?.cover ?? 0,
-                      caption: "",
+                      caption: current?.caption || "",
                     });
                   }}
                 />
@@ -753,6 +775,7 @@ export default function TravelAdmin() {
             album={normalizeAlbum(config.recent?.[activeRecentId])}
             onChange={(album) => setRecent(activeRecentId, album)}
             hint={`正在配置：${currentRecent.city} · ${currentRecent.date}`}
+            withDate
           />
 
           <div className="ta-library">
@@ -770,9 +793,10 @@ export default function TravelAdmin() {
                     const photos = current?.photos || [];
                     if (photos.includes(src)) return;
                     setRecent(activeRecentId, {
+                      ...(current || {}),
                       photos: [...photos, src],
                       cover: current?.cover ?? 0,
-                      caption: "",
+                      caption: current?.caption || "",
                     });
                   }}
                 />
@@ -786,8 +810,10 @@ export default function TravelAdmin() {
 
       <footer className="ta-foot">
         <span>
-          已配置 {configuredProvinceCount} 个省份 · 共 {photoCount} 张照片 ·
-          仅本机可见
+          已配置 {configuredProvinceCount} 个省份 · 共 {photoCount} 张照片 ·{" "}
+          {isSupabaseConfigured()
+            ? "连接图床登录后即可同步给全站访客"
+            : "照片存本机，访客看到默认内容"}
         </span>
         <button
           type="button"

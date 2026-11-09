@@ -298,6 +298,26 @@ export default function TravelMap({ onNavigate }) {
     return merged;
   }, [resolvedConfig]);
 
+  // 最近足迹展示顺序：配了时间（album.date）的按时间降序在前，其余随机在后
+  const recentOrder = useMemo(() => {
+    const dated = [];
+    const undated = [];
+    TRAVEL_RECENT.forEach((item) => {
+      if (recentAlbums[item.id]?.date) dated.push(item);
+      else undated.push(item);
+    });
+    dated.sort((a, b) =>
+      String(recentAlbums[b.id]?.date).localeCompare(
+        String(recentAlbums[a.id]?.date),
+      ),
+    );
+    for (let i = undated.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [undated[i], undated[j]] = [undated[j], undated[i]];
+    }
+    return [...dated, ...undated];
+  }, [recentAlbums]);
+
   useEffect(() => {
     let alive = true;
     fetch(GEO_URL)
@@ -378,7 +398,7 @@ export default function TravelMap({ onNavigate }) {
 
     push(latestAlbum, {
       city: TRAVEL_LATEST.city,
-      date: TRAVEL_LATEST.date,
+      date: latestAlbum?.date || TRAVEL_LATEST.date,
       note: TRAVEL_LATEST.note,
       tone: TRAVEL_LATEST.tone,
     });
@@ -387,7 +407,7 @@ export default function TravelMap({ onNavigate }) {
       const album = normalizeAlbum(entry);
       push(album, {
         city: name,
-        date: "",
+        date: album?.date || "",
         note: album?.caption || `${name} · 旅途片段`,
       });
     });
@@ -396,8 +416,8 @@ export default function TravelMap({ onNavigate }) {
       if (!recentAlbums[item.id]) return;
       push(recentAlbums[item.id], {
         city: item.city,
-        date: item.date,
-        note: "",
+        date: recentAlbums[item.id]?.date || item.date,
+        note: recentAlbums[item.id]?.caption || "",
         tone: item.tone,
       });
     });
@@ -638,7 +658,7 @@ export default function TravelMap({ onNavigate }) {
         <p className="tm-kicker">04 — TRAVEL MAP</p>
         <h2 className="tm-title">我们去过的地方</h2>
         <p className="tm-sub">
-          把一起走过的城市钉在地图上，绿起来的地方是回忆，空着的地方留给下一次出发。
+          把一起走过的城市钉在地图上，亮起来的地方是回忆，空着的地方留给下一次出发。
         </p>
       </header>
 
@@ -707,23 +727,31 @@ export default function TravelMap({ onNavigate }) {
               </button>
             </div>
 
-            <ul className="tm-legend">
-              <li className="tm-stat is-visited">
-                <span className="tm-dot" aria-hidden="true" />
-                <span className="tm-stat-label">我们去过</span>
-                <strong>{stats.visited}</strong>
-              </li>
-              <li className="tm-stat is-wish">
-                <span className="tm-dot" aria-hidden="true" />
-                <span className="tm-stat-label">想去</span>
-                <strong>{stats.wish}</strong>
-              </li>
-              <li className="tm-stat is-todo">
-                <span className="tm-dot" aria-hidden="true" />
-                <span className="tm-stat-label">还没去</span>
-                <strong>{stats.todo}</strong>
-              </li>
-              <li className="tm-progress" aria-hidden="true">
+            <div className="tm-legend">
+              <header className="tm-legend-head">
+                <strong>旅行足迹</strong>
+                <span>
+                  {stats.visited}/{stats.total} 已点亮
+                </span>
+              </header>
+              <ul className="tm-legend-list">
+                <li className="tm-stat is-visited">
+                  <span className="tm-dot" aria-hidden="true" />
+                  <span className="tm-stat-label">我们去过</span>
+                  <strong>{stats.visited}</strong>
+                </li>
+                <li className="tm-stat is-wish">
+                  <span className="tm-dot" aria-hidden="true" />
+                  <span className="tm-stat-label">想去</span>
+                  <strong>{stats.wish}</strong>
+                </li>
+                <li className="tm-stat is-todo">
+                  <span className="tm-dot" aria-hidden="true" />
+                  <span className="tm-stat-label">还没去</span>
+                  <strong>{stats.todo}</strong>
+                </li>
+              </ul>
+              <div className="tm-legend-progress" aria-hidden="true">
                 <span
                   className="tm-progress-fill"
                   style={{
@@ -734,8 +762,8 @@ export default function TravelMap({ onNavigate }) {
                     }%`,
                   }}
                 />
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -761,8 +789,10 @@ export default function TravelMap({ onNavigate }) {
               <span className="tm-recent-more">看看有没有落下的地方</span>
             </header>
             <ul className="tm-recent-list">
-              {TRAVEL_RECENT.map((item) => {
-                const cover = albumCover(recentAlbums[item.id]);
+              {recentOrder.map((item) => {
+                const entry = normalizeAlbum(recentAlbums[item.id]);
+                const cover = albumCover(entry);
+                const displayDate = entry?.date || item.date;
                 return (
                   <li key={item.id} className="tm-recent-item">
                     <span
@@ -778,7 +808,7 @@ export default function TravelMap({ onNavigate }) {
                     </span>
                     <div className="tm-recent-text">
                       <strong>{item.city}</strong>
-                      <em>{item.date}</em>
+                      <em>{displayDate}</em>
                     </div>
                   </li>
                 );
@@ -787,18 +817,6 @@ export default function TravelMap({ onNavigate }) {
           </section>
         </aside>
       </div>
-
-      {/* 照片管理入口：只在路由表里注册、不进导航，避免访客点进来 */}
-      <footer className="tm-foot reveal" style={{ "--i": 4 }}>
-        <span>照片只存在本机浏览器，访客看到的是默认内容。</span>
-        <button
-          type="button"
-          className="tm-admin-entry"
-          onClick={() => onNavigate?.("travel-admin")}
-        >
-          换照片
-        </button>
-      </footer>
     </div>
   );
 }

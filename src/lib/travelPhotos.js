@@ -4,7 +4,8 @@
  * 只在本机浏览器生效，不会影响访客看到的内容。
  *
  * 数据结构（每个影集位一条）：
- *   { photos: [src, ...], cover: 0, caption: "杭州 · 西湖" }
+ *   { photos: [src, ...], cover: 0, caption: "杭州 · 西湖", date: "2024-06-14" }
+ * date 为该组照片的时间（可选，最近足迹用它排序、相框页展示）
  * 兼容早期只存一张图的 { src } 写法，读取时统一归一化。
  */
 
@@ -27,7 +28,7 @@ export const EMPTY_TRAVEL_CONFIG = {
 /* ---- 影集归一化 ---- */
 
 /**
- * 把任意历史写法的照片配置收成 { photos, cover, caption }。
+ * 把任意历史写法的照片配置收成 { photos, cover, caption, date }。
  * 没有任何有效图片时返回 null，调用方据此回落到默认值。
  */
 export function normalizeAlbum(entry) {
@@ -46,7 +47,12 @@ export function normalizeAlbum(entry) {
     ? Math.min(Math.max(Math.trunc(rawCover), 0), photos.length - 1)
     : 0;
 
-  return { photos, cover, caption: entry.caption || "" };
+  return {
+    photos,
+    cover,
+    caption: typeof entry.caption === "string" ? entry.caption : "",
+    date: typeof entry.date === "string" ? entry.date : "",
+  };
 }
 
 // 影集封面（地图、缩略图都只用这一张）

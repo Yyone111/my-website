@@ -129,7 +129,7 @@ export async function readSharedConfig() {
     const supabase = await getClient();
     const { data, error } = await supabase
       .from(CONFIG_TABLE)
-      .select("slot_type, slot_key, photos, cover, caption");
+      .select("slot_type, slot_key, photos, cover, caption, date");
     if (error) {
       console.warn("读取共享照片配置失败:", error.message);
       return null;
@@ -145,6 +145,7 @@ export async function readSharedConfig() {
         photos,
         cover: Number.isInteger(row.cover) && row.cover >= 0 ? row.cover : 0,
         caption: typeof row.caption === "string" ? row.caption : "",
+        date: typeof row.date === "string" ? row.date : "",
       };
       if (row.slot_type === "latest") {
         config.latest = album;
@@ -186,6 +187,7 @@ export async function pushSharedConfig(config) {
         photos: album.photos,
         cover: album.cover,
         caption: album.caption,
+        date: album.date,
       });
     }
   });
@@ -197,6 +199,7 @@ export async function pushSharedConfig(config) {
       photos: latest.photos,
       cover: latest.cover,
       caption: latest.caption,
+      date: latest.date,
     });
   }
   Object.entries(config.recent || {}).forEach(([id, entry]) => {
@@ -208,6 +211,7 @@ export async function pushSharedConfig(config) {
         photos: album.photos,
         cover: album.cover,
         caption: album.caption,
+        date: album.date,
       });
     }
   });

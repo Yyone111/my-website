@@ -8,9 +8,18 @@ export const NAV_ITEMS = [
   { key: "projects", label: "作品", index: "01", hash: "#/projects" },
   { key: "skills", label: "技能", index: "02", hash: "#/skills" },
   { key: "about", label: "关于", index: "03", hash: "#/about" },
-  { key: "travel", label: "旅行地图", index: "04", hash: "#/travel" },
+  {
+    key: "travel",
+    label: "旅行地图",
+    index: "04",
+    hash: "#/travel",
+    children: [
+      { key: "travel", label: "旅行地图", hash: "#/travel" },
+      { key: "travel-admin", label: "照片配置", hash: "#/travel-admin" },
+    ],
+  },
   { key: "contact", label: "联系", index: "05", hash: "#/contact" },
-  // hidden: 只注册路由、不出现在导航里；从旅行地图页底部入口进入
+  // hidden: 只注册路由、不出现在导航里；入口在导航二级菜单
   {
     key: "travel-admin",
     label: "照片管理",
