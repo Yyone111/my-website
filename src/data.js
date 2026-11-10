@@ -14,7 +14,6 @@ export const NAV_ITEMS = [
     index: "04",
     hash: "#/travel",
     children: [
-      { key: "travel", label: "旅行地图", hash: "#/travel" },
       { key: "travel-admin", label: "照片配置", hash: "#/travel-admin" },
     ],
   },
