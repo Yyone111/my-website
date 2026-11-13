@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import UiIcon from "../components/UiIcon";
-import PhotoWall from "../components/PhotoWall";
+import TypeMotto from "../components/TypeMotto";
 import { HERO_SLOGANS, STATS } from "../data";
 
 export default function Home({ onNavigate }) {
@@ -99,12 +99,8 @@ export default function Home({ onNavigate }) {
         </div>
       </section>
 
-      <section className="photo-wall-section reveal" style={{ "--i": 2 }}>
-        <header className="photo-wall-head">
-          <h3 className="photo-wall-title">时光相册</h3>
-          <p className="photo-wall-sub">走过的路与看过的风景，滚动浏览。</p>
-        </header>
-        <PhotoWall />
+      <section className="motto-anchor reveal" style={{ "--i": 2 }}>
+        <TypeMotto />
       </section>
     </div>
   );

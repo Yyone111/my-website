@@ -58,6 +58,7 @@ function App() {
   const [pendingLabel, setPendingLabel] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [openDrop, setOpenDrop] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isDraggingFloatBtn, setIsDraggingFloatBtn] = useState(false);
   const [chatWidgetPos, setChatWidgetPos] = useState(() => {
@@ -420,11 +421,15 @@ function App() {
                 <div
                   key={item.key}
                   className={`icomat-nav-drop ${
+                    openDrop === item.key ? "is-open" : ""
+                  } ${
                     route === item.key ||
                     item.children.some((child) => child.key === route)
                       ? "is-active-root"
                       : ""
                   }`}
+                  onMouseEnter={() => setOpenDrop(item.key)}
+                  onMouseLeave={() => setOpenDrop(null)}
                 >
                   <button
                     type="button"
@@ -440,6 +445,7 @@ function App() {
                         ? "page"
                         : undefined
                     }
+                    aria-expanded={openDrop === item.key}
                     onClick={() => navigate(item.key)}
                   >
                     <span className="icomat-nav-text" aria-hidden="true">

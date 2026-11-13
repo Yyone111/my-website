@@ -474,3 +474,31 @@ export const TRAVEL_RECENT = [
     tone: ["#e2ecec", "#a9c9c4"],
   },
 ];
+
+// 首页动态打字格言：中英双语，逐字切换
+export const MOTTOES = [
+  {
+    zh: "把日子过成喜欢的样子，本身就是一件了不起的事。",
+    en: "Living life the way you like is itself something remarkable.",
+  },
+  {
+    zh: "山高路远，看世界也找自己。",
+    en: "Across the mountains and roads, see the world and find yourself.",
+  },
+  {
+    zh: "保持热爱，奔赴山海。",
+    en: "Stay passionate, run toward the mountains and the sea.",
+  },
+  {
+    zh: "慢慢来，比较快。",
+    en: "Slow down, and you'll get there faster.",
+  },
+  {
+    zh: "所有的不期而遇，都在路上。",
+    en: "Every serendipity happens along the way.",
+  },
+  {
+    zh: "出发，永远是最有意义的事。",
+    en: "Setting out is always the most meaningful thing.",
+  },
+];
