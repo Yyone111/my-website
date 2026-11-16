@@ -471,7 +471,10 @@ function App() {
                         }`}
                         onClick={() => navigate(child.key)}
                       >
-                        {child.label}
+                        <span className="icomat-nav-text" aria-hidden="true">
+                          <span>{child.label}</span>
+                          <span>{child.label}</span>
+                        </span>
                       </button>
                     ))}
                   </div>

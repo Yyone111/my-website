@@ -2442,7 +2442,7 @@ body::after {
   appearance: none;
   border: 0;
   display: block;
-  padding: 5px 9px;
+  padding: 0 9px;
   border-radius: 2px;
   background: transparent;
   color: #4f5f74;
@@ -2457,16 +2457,26 @@ body::after {
   transition:
     background 0.18s ease,
     color 0.18s ease;
+  /* 与一级菜单项一致的滚动文字容器 */
+  display: flex;
+  align-items: center;
+  height: 26px;
+  overflow: hidden;
 }
 
-.icomat-nav-drop-item:hover {
-  background: transparent;
-  color: #1f3957;
+.icomat-nav-drop-item .icomat-nav-text {
+  --roll-gap: 0.32em;
 }
 
+.icomat-nav-drop-item:hover,
 .icomat-nav-drop-item.is-active {
   background: transparent;
   color: #1f3957;
+}
+
+.icomat-nav-drop-item:hover .icomat-nav-text span,
+.icomat-nav-drop-item:focus-visible .icomat-nav-text span {
+  transform: translate3d(0, calc(-1em - var(--roll-gap)), 0);
 }
 
 .icomat-nav-drop-item.is-active::after {
@@ -5945,6 +5955,119 @@ body.dark-mode .motto-index,
     filter: none;
     transform: none;
   }
+}
+
+/* ==========================================================================
+   首页指尖星空：Canvas 夜空画布，点击放烟花、拖拽留星轨
+   ========================================================================== */
+
+.night-canvas {
+  margin-top: 64px;
+}
+
+.night-canvas-head {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.night-canvas-title {
+  margin: 0 0 8px;
+  font-size: clamp(20px, 2.6vw, 27px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--motto-ink, #1f3957);
+}
+
+.night-canvas-sub {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #6a7a92;
+}
+
+/* 夜空窗口：深蓝渐变 + 玻璃圆角边框 */
+.night-canvas-stage {
+  position: relative;
+  height: 380px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(120, 150, 190, 0.22);
+  background: radial-gradient(
+    130% 150% at 30% 16%,
+    #101d3a 0%,
+    #0a1128 54%,
+    #05080f 100%
+  );
+  box-shadow: 0 20px 44px rgba(14, 24, 54, 0.28);
+}
+
+.night-canvas-board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.night-canvas-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(216, 234, 255, 0.5);
+  pointer-events: none;
+  user-select: none;
+}
+
+.night-canvas-clear {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  appearance: none;
+  border: 1px solid rgba(200, 220, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(224, 238, 255, 0.82);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.night-canvas-clear:hover,
+.night-canvas-clear:focus-visible {
+  background: rgba(122, 168, 255, 0.18);
+  color: #ffffff;
+}
+
+/* 响应式：窄屏降低画布高度 */
+@media (max-width: 720px) {
+  .night-canvas-stage {
+    height: 300px;
+  }
+}
+
+body.dark-mode .night-canvas-title,
+[data-theme="dark"] .night-canvas-title {
+  color: #e3ebf4;
+}
+
+body.dark-mode .night-canvas-sub,
+[data-theme="dark"] .night-canvas-sub {
+  color: #9db0c6;
 }
 
 /* ---- 晾衣绳：一条绳横拉过去，照片用夹子挂在绳上 ---- */

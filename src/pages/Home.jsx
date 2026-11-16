@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import UiIcon from "../components/UiIcon";
 import TypeMotto from "../components/TypeMotto";
+import NightCanvas from "../components/NightCanvas";
 import { HERO_SLOGANS, STATS } from "../data";
 
 export default function Home({ onNavigate }) {
@@ -102,6 +103,8 @@ export default function Home({ onNavigate }) {
       <section className="motto-anchor reveal" style={{ "--i": 2 }}>
         <TypeMotto />
       </section>
+
+      <NightCanvas />
     </div>
   );
 }
