@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import UiIcon from "./components/UiIcon";
 import ParticleField from "./components/ParticleField";
 import Snowfall from "./components/Snowfall";
+import PixelPet from "./components/PixelPet";
 import {
   BRAND_TEXT,
   CONTACT_ITEMS,
@@ -533,6 +534,7 @@ function App() {
 
       <ParticleField />
       <Snowfall />
+      <PixelPet />
 
       <div className="yy-main" ref={rootRef}>
         <aside className="yy-left">

@@ -8383,3 +8383,129 @@ body.dark-mode .ta-gate-icon,
 [data-theme="dark"] .ta-gate-icon {
   background: linear-gradient(135deg, #3a2730, #4a2f3a);
 }
+
+/* ==========================================================================
+   像素宠物：固定右下角的像素风小猫，会眨眼/打盹/跟随鼠标
+   ========================================================================== */
+
+.pixel-pet {
+  position: fixed;
+  right: 20px;
+  bottom: 100px;
+  z-index: 9999;
+  width: 64px;
+  height: 64px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pixel-pet:hover {
+  transform: scale(1.1);
+}
+
+.pixel-pet:active {
+  transform: scale(0.95);
+}
+
+/* 状态动画 */
+.pixel-pet-idle {
+  animation: pet-bob 2s ease-in-out infinite;
+}
+
+.pixel-pet-blink {
+  animation: pet-bob 2s ease-in-out infinite;
+}
+
+.pixel-pet-sleepy {
+  animation: pet-sway 3s ease-in-out infinite;
+}
+
+.pixel-pet-happy {
+  animation: pet-bounce 0.6s ease-in-out;
+}
+
+.pixel-pet-follow {
+  transition:
+    left 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes pet-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes pet-sway {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes pet-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* 关闭按钮 */
+.pixel-pet-close {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.pixel-pet:hover .pixel-pet-close {
+  opacity: 1;
+}
+
+.pixel-pet-close:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+/* 响应式：窄屏缩小宠物 */
+@media (max-width: 720px) {
+  .pixel-pet {
+    width: 48px;
+    height: 48px;
+    right: 12px;
+    bottom: 80px;
+  }
+
+  .pixel-pet-close {
+    width: 14px;
+    height: 14px;
+    font-size: 10px;
+  }
+}
