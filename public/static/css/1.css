@@ -3765,7 +3765,7 @@ body::after {
 .hero-stats {
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   max-width: 420px;
-  margin: 18px auto 0;
+  margin: 12px auto 0;
 }
 
 .hero-stats .stat-item {
@@ -5393,7 +5393,7 @@ body.dark-mode,
 .snowfall-canvas {
   position: fixed;
   inset: 0;
-  z-index: 400; /* 内容(z:1)之上，页面转场(z:1500)/聊天浮窗(z:9999)之下 */
+  z-index: 0; /* 位于正文(z:1+)之下：雪花只落在页面背景上，不干扰卡片与终端文字 */
   pointer-events: none;
   opacity: 1;
   transition: opacity 0.5s ease;
@@ -5480,7 +5480,7 @@ body.dark-mode,
 
 /* 按钮：更宽的留白与更柔和的描边 */
 .hero-actions {
-  margin-top: 20px;
+  margin-top: 14px;
   gap: 14px;
 }
 
@@ -5677,9 +5677,157 @@ body.dark-mode .hero-btn-secondary,
    ========================================================================== */
 
 .motto-anchor {
-  margin-top: 56px;
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 18px;
+  width: 100%;
+  max-width: 1060px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.motto-anchor .motto-section {
+  max-width: none;
+}
+
+/* ---- 此刻 NOW 侧卡：实时钟 + 状态列表 ---- */
+.now-card {
+  position: relative;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  padding: 30px 26px 26px;
+  border-radius: 22px;
+  background: rgba(250, 251, 247, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 20px 44px rgba(90, 102, 112, 0.1);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  overflow: hidden;
+}
+
+.now-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 26px;
+  right: 26px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(122, 176, 138, 0),
+    rgba(122, 176, 138, 0.75),
+    rgba(122, 176, 138, 0)
+  );
+}
+
+.now-kicker {
+  margin: 0 0 14px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7f8b99;
+}
+
+.now-clock {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  color: #2c3a4a;
+  font-variant-numeric: tabular-nums;
+}
+
+.now-sec {
+  font-size: 18px;
+  font-weight: 500;
+  color: #8fa0b2;
+}
+
+.now-date {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #8b98a7;
+}
+
+.now-list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px dashed rgba(120, 150, 190, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.now-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.now-item-label {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(122, 176, 138, 0.14);
+  border: 1px solid rgba(122, 176, 138, 0.22);
+  color: #5c8a6a;
+  font-size: 11px;
+}
+
+.now-item-value {
+  color: #4a5a6b;
+}
+
+/* 暗色模式 */
+body.dark-mode .now-card,
+[data-theme="dark"] .now-card {
+  background: rgba(20, 29, 42, 0.55);
+  border-color: rgba(120, 150, 190, 0.2);
+}
+
+body.dark-mode .now-clock,
+[data-theme="dark"] .now-clock {
+  color: #e3ebf4;
+}
+
+body.dark-mode .now-sec,
+[data-theme="dark"] .now-sec {
+  color: #7d8ea1;
+}
+
+body.dark-mode .now-kicker,
+body.dark-mode .now-date,
+[data-theme="dark"] .now-kicker,
+[data-theme="dark"] .now-date {
+  color: #8b9aab;
+}
+
+body.dark-mode .now-item-value,
+[data-theme="dark"] .now-item-value {
+  color: #b9c6d4;
+}
+
+body.dark-mode .now-item-label,
+[data-theme="dark"] .now-item-label {
+  background: rgba(122, 176, 138, 0.18);
+  border-color: rgba(122, 176, 138, 0.28);
+  color: #a3d1b0;
+}
+
+@media (max-width: 900px) {
+  .motto-anchor {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
 }
 
 .motto-section {
@@ -5958,116 +6106,168 @@ body.dark-mode .motto-index,
 }
 
 /* ==========================================================================
-   首页指尖星空：Canvas 夜空画布，点击放烟花、拖拽留星轨
+   首页互动终端：开发者控制台，自动回放命令，支持输入 help 等命令
    ========================================================================== */
 
-.night-canvas {
-  margin-top: 64px;
-}
-
-.night-canvas-head {
-  text-align: center;
-  margin-bottom: 26px;
-}
-
-.night-canvas-title {
-  margin: 0 0 8px;
-  font-size: clamp(20px, 2.6vw, 27px);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--motto-ink, #1f3957);
-}
-
-.night-canvas-sub {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
-  color: #6a7a92;
-}
-
-/* 夜空窗口：深蓝渐变 + 玻璃圆角边框 */
-.night-canvas-stage {
+.terminal {
   position: relative;
-  height: 380px;
+  z-index: 401; /* 高于全站飘雪(z:400)，避免雪花落在终端文字上 */
+  margin-top: 44px;
+}
+
+.terminal-window {
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid rgba(120, 150, 190, 0.22);
-  background: radial-gradient(
-    130% 150% at 30% 16%,
-    #101d3a 0%,
-    #0a1128 54%,
-    #05080f 100%
-  );
-  box-shadow: 0 20px 44px rgba(14, 24, 54, 0.28);
+  border: 1px solid rgba(120, 150, 190, 0.26);
+  background: linear-gradient(160deg, #101b2e 0%, #0a1220 60%, #070d18 100%);
+  box-shadow: 0 20px 44px rgba(14, 24, 54, 0.26);
 }
 
-.night-canvas-board {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  cursor: crosshair;
-  touch-action: none;
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.night-canvas-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
-  margin: 0;
+.terminal-dots {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.terminal-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.terminal-dots i:nth-child(1) {
+  background: #f2777a;
+}
+
+.terminal-dots i:nth-child(2) {
+  background: #f2c14e;
+}
+
+.terminal-dots i:nth-child(3) {
+  background: #6cc28a;
+}
+
+.terminal-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(216, 234, 255, 0.5);
-  pointer-events: none;
-  user-select: none;
+  letter-spacing: 0.06em;
+  color: rgba(200, 218, 240, 0.55);
 }
 
-.night-canvas-clear {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
+.terminal-reset {
+  margin-left: 12px;
   appearance: none;
-  border: 1px solid rgba(200, 220, 255, 0.28);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(224, 238, 255, 0.82);
+  border: 1px solid rgba(200, 220, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(224, 238, 255, 0.75);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
   border-radius: 999px;
-  padding: 5px 12px;
+  padding: 3px 10px;
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   transition:
     background 0.18s ease,
     color 0.18s ease;
 }
 
-.night-canvas-clear:hover,
-.night-canvas-clear:focus-visible {
+.terminal-reset:hover,
+.terminal-reset:focus-visible {
   background: rgba(122, 168, 255, 0.18);
   color: #ffffff;
 }
 
-/* 响应式：窄屏降低画布高度 */
-@media (max-width: 720px) {
-  .night-canvas-stage {
-    height: 300px;
+.terminal-body {
+  height: 280px;
+  overflow-y: auto;
+  padding: 16px 18px 18px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.85;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 160, 210, 0.35) transparent;
+}
+
+.terminal-line {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.terminal-line.is-cmd {
+  color: #e8f1ff;
+}
+
+.terminal-line.is-out {
+  color: #a9bfd8;
+}
+
+.terminal-ps1 {
+  color: #6ee7b7;
+  font-weight: 700;
+}
+
+.terminal-caret {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: rgba(200, 226, 255, 0.85);
+  animation: terminal-caret-blink 1s steps(2, start) infinite;
+}
+
+@keyframes terminal-caret-blink {
+  to {
+    visibility: hidden;
   }
 }
 
-body.dark-mode .night-canvas-title,
-[data-theme="dark"] .night-canvas-title {
-  color: #e3ebf4;
+.terminal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
 }
 
-body.dark-mode .night-canvas-sub,
-[data-theme="dark"] .night-canvas-sub {
-  color: #9db0c6;
+.terminal-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #e8f1ff;
+  font: inherit;
+  padding: 2px 0;
+}
+
+.terminal-input::placeholder {
+  color: rgba(150, 175, 205, 0.5);
+}
+
+@media (max-width: 720px) {
+  .terminal {
+    margin-top: 36px;
+  }
+
+  .terminal-body {
+    height: 260px;
+    font-size: 12px;
+    padding: 14px 14px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-caret {
+    animation: none;
+  }
 }
 
 /* ---- 晾衣绳：一条绳横拉过去，照片用夹子挂在绳上 ---- */

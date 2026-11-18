@@ -502,3 +502,10 @@ export const MOTTOES = [
     en: "Setting out is always the most meaningful thing.",
   },
 ];
+
+// 首页「此刻」状态卡：当前在做 / 在读 / 心态
+export const NOW_STATUS = [
+  { label: "在做", value: "打磨个人站细节" },
+  { label: "在读", value: "《沉默的大多数》" },
+  { label: "心态", value: "慢慢来，比较快" },
+];
