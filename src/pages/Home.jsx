@@ -1,13 +1,131 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import UiIcon from "../components/UiIcon";
 import TypeMotto from "../components/TypeMotto";
 import Terminal from "../components/Terminal";
 import NowCard from "../components/NowCard";
 import { HERO_SLOGANS, STATS } from "../data";
 
+// 统计数值滚动：进入视口时从 0 递增到目标值，"∞" 等非数字原样输出
+function CountUp({ value }) {
+  const match = String(value).match(/^(\d+)(.*)$/);
+  const target = match ? Number(match[1]) : null;
+  const suffix = match ? match[2] : "";
+  const ref = useRef(null);
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (target === null) return undefined;
+    const el = ref.current;
+    if (!el) return undefined;
+
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReduced) {
+      setCurrent(target);
+      return undefined;
+    }
+
+    let raf = 0;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        const start = performance.now();
+        const duration = 1100;
+        const tick = (now) => {
+          const progress = Math.min(1, (now - start) / duration);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setCurrent(Math.round(target * eased));
+          if (progress < 1) raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [target]);
+
+  if (target === null) {
+    return <p className="stat-value">{value}</p>;
+  }
+
+  return (
+    <p className="stat-value" ref={ref}>
+      {current}
+      {suffix}
+    </p>
+  );
+}
+
 export default function Home({ onNavigate }) {
   const [typedText, setTypedText] = useState("");
   const [sloganIndex, setSloganIndex] = useState(0);
+  const titleRef = useRef(null);
+
+  // 标题 3D 视差：跟随鼠标倾斜，缓动收敛；减少动效时不启用
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return undefined;
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReduced) return undefined;
+
+    let raf = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let curX = 0;
+    let curY = 0;
+
+    const loop = () => {
+      curX += (targetX - curX) * 0.06;
+      curY += (targetY - curY) * 0.06;
+      el.style.setProperty("--tilt-x", `${curX.toFixed(2)}deg`);
+      el.style.setProperty("--tilt-y", `${curY.toFixed(2)}deg`);
+
+      if (Math.abs(targetX - curX) > 0.05 || Math.abs(targetY - curY) > 0.05) {
+        raf = requestAnimationFrame(loop);
+      } else {
+        raf = 0;
+      }
+    };
+
+    const wake = () => {
+      if (!raf) raf = requestAnimationFrame(loop);
+    };
+
+    const onMove = (event) => {
+      const rect = el.getBoundingClientRect();
+      const halfW = Math.max(1, window.innerWidth / 2);
+      const halfH = Math.max(1, window.innerHeight / 2);
+      const dx = (event.clientX - (rect.left + rect.width / 2)) / halfW;
+      const dy = (event.clientY - (rect.top + rect.height / 2)) / halfH;
+      targetY = Math.max(-1, Math.min(1, dx)) * 4.5;
+      targetX = Math.max(-1, Math.min(1, dy)) * -3.5;
+      wake();
+    };
+
+    const onLeave = () => {
+      targetX = 0;
+      targetY = 0;
+      wake();
+    };
+
+    window.addEventListener("pointermove", onMove, { passive: true });
+    document.documentElement.addEventListener("mouseleave", onLeave);
+
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      document.documentElement.removeEventListener("mouseleave", onLeave);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
 
   // 打字机副标题：克制轮换，尊重 prefers-reduced-motion
   useEffect(() => {
@@ -53,7 +171,11 @@ export default function Home({ onNavigate }) {
           <span className="hero-kicker-dot" />
           全栈开发者 · 个人主页
         </p>
-        <h1 className="hero-landing-title" aria-label="Hello, I'm Yy">
+        <h1
+          className="hero-landing-title"
+          ref={titleRef}
+          aria-label="Hello, I'm Yy"
+        >
           {"Hello, I'm ".split("").map((char, index) => (
             <span
               key={`pre-${index}`}
@@ -94,7 +216,7 @@ export default function Home({ onNavigate }) {
         <div className="stats-grid hero-stats">
           {STATS.map((stat) => (
             <div className="stat-item" key={stat.label}>
-              <p className="stat-value">{stat.value}</p>
+              <CountUp value={stat.value} />
               <p className="stat-label">{stat.label}</p>
             </div>
           ))}

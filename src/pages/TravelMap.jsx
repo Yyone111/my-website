@@ -96,7 +96,7 @@ function RandomFrame({ pool, onOpenAdmin }) {
       >
         {current ? (
           <>
-            <img src={current.src} alt={current.city} />
+            <img src={current.src} alt={current.city} decoding="async" />
             <span className="tm-shot-shade" aria-hidden="true" />
           </>
         ) : (
@@ -198,7 +198,12 @@ function ProvinceAlbum({ province, album, onClose, onOpenAdmin }) {
       </div>
 
       <div className="tm-latest-shot tm-album-shot">
-        <img src={src} alt={`${province.name} 的照片`} />
+        <img
+          src={src}
+          alt={`${province.name} 的照片`}
+          loading="lazy"
+          decoding="async"
+        />
         {album.photos.length > 1 && (
           <span className="tm-album-count">
             {preview + 1} / {album.photos.length}

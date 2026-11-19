@@ -33,7 +33,8 @@ export default function ParticleField({ className = "" }) {
 
     const readParticleColor = () => {
       const style = window.getComputedStyle(document.documentElement);
-      const rgb = style.getPropertyValue("--particle-rgb").trim() || "74, 124, 255";
+      const rgb =
+        style.getPropertyValue("--particle-rgb").trim() || "74, 124, 255";
       const alpha = parseFloat(
         style.getPropertyValue("--particle-alpha").trim(),
       );
@@ -113,7 +114,10 @@ export default function ParticleField({ className = "" }) {
       }
       ctx.globalAlpha = 1;
 
-      rafId = requestAnimationFrame(draw);
+      // 页面不可见或用户偏好减少动效时停止循环，避免后台空耗
+      if (!document.hidden && !isReduced) {
+        rafId = requestAnimationFrame(draw);
+      }
     };
 
     const handleMouseMove = (event) => {
@@ -144,12 +148,22 @@ export default function ParticleField({ className = "" }) {
     window.addEventListener("pointermove", handleMouseMove, { passive: true });
     window.addEventListener("pointerleave", handleMouseLeave);
 
+    // 从后台标签页切回时恢复动画循环
+    const onVisibility = () => {
+      if (!document.hidden && !isReduced) {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(draw);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       cancelAnimationFrame(rafId);
       window.clearInterval(colorTimer);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", handleMouseMove);
       window.removeEventListener("pointerleave", handleMouseLeave);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 

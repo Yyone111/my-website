@@ -529,6 +529,8 @@ function App() {
           id="qqImage"
           src="/static/img/qqnumber.jpg"
           alt="QQ二维码"
+          loading="lazy"
+          decoding="async"
         />
       </div>
 
@@ -540,7 +542,12 @@ function App() {
         <aside className="yy-left">
           <div className="profile-card">
             <div className="avatar-container">
-              <img src="/static/img/head.jpg" alt="Yy" className="avatar" />
+              <img
+                src="/static/img/head.jpg"
+                alt="Yy"
+                className="avatar"
+                decoding="async"
+              />
               <div className="emoji-badge emoji-1">
                 <UiIcon name="spark" className="badge-icon" />
               </div>
@@ -572,6 +579,8 @@ function App() {
                 <img
                   src="https://www.bilibili.com/favicon.ico"
                   alt="Bilibili"
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     width: "30px",
                     height: "30px",
@@ -593,6 +602,8 @@ function App() {
                 <img
                   src="/static/img/qq.ico"
                   alt="QQ"
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     width: "30px",
                     height: "30px",
